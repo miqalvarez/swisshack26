@@ -22,18 +22,20 @@ interface Row {
   value?: number
   expected?: number
   band?: [number, number]
+  benchmark?: number
 }
 
 export function WealthChart({ wealth }: { wealth: WealthSeries }) {
   const hist = wealth.history
   const todayDate = hist[hist.length - 1]?.date
   const current = hist[hist.length - 1]?.value ?? 0
+  const benchByDate = new Map(wealth.benchmark.map((b) => [b.date, b.value]))
 
   const data: Row[] = [
     ...hist.map((h, i) =>
       i === hist.length - 1
-        ? { date: h.date, value: h.value, expected: h.value, band: [h.value, h.value] as [number, number] }
-        : { date: h.date, value: h.value },
+        ? { date: h.date, value: h.value, expected: h.value, band: [h.value, h.value] as [number, number], benchmark: benchByDate.get(h.date) }
+        : { date: h.date, value: h.value, benchmark: benchByDate.get(h.date) },
     ),
     ...wealth.forecast.map((f) => ({
       date: f.date,
@@ -43,6 +45,7 @@ export function WealthChart({ wealth }: { wealth: WealthSeries }) {
   ]
 
   const projUpside = current > 0 ? ((wealth.projectedValue - current) / current) * 100 : 0
+  const vsBenchmark = wealth.cagr - wealth.benchmarkCagr
 
   return (
     <div>
@@ -53,6 +56,11 @@ export function WealthChart({ wealth }: { wealth: WealthSeries }) {
         </div>
         <div className="flex gap-6">
           <Metric label="3y growth (CAGR)" value={formatPct(wealth.cagr)} positive={wealth.cagr >= 0} />
+          <Metric
+            label="vs benchmark"
+            value={`${vsBenchmark >= 0 ? '+' : ''}${vsBenchmark.toFixed(1)}pp`}
+            positive={vsBenchmark >= 0}
+          />
           <Metric
             label="12m projection"
             value={formatChf(wealth.projectedValue, { compact: true })}
@@ -107,6 +115,14 @@ export function WealthChart({ wealth }: { wealth: WealthSeries }) {
               isAnimationActive={false}
               connectNulls
             />
+            {/* Benchmark (market) over the history window */}
+            <Line
+              dataKey="benchmark"
+              stroke="var(--color-muted-foreground)"
+              strokeWidth={1.5}
+              dot={false}
+              isAnimationActive={false}
+            />
             {/* Expected forecast (dashed) */}
             <Line
               dataKey="expected"
@@ -137,6 +153,7 @@ export function WealthChart({ wealth }: { wealth: WealthSeries }) {
 
       <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
         <Legend swatch="solid">History</Legend>
+        <Legend swatch="benchmark">Benchmark</Legend>
         <Legend swatch="dashed">Projection</Legend>
         <Legend swatch="band">Range</Legend>
         <span className="ml-auto">Illustrative projection · not advice</span>
@@ -175,13 +192,15 @@ function Legend({
   swatch,
   children,
 }: {
-  swatch: 'solid' | 'dashed' | 'band'
+  swatch: 'solid' | 'dashed' | 'band' | 'benchmark'
   children: React.ReactNode
 }) {
   return (
     <span className="inline-flex items-center gap-1.5">
       {swatch === 'band' ? (
         <span className="h-2 w-4 rounded-sm bg-primary/15" />
+      ) : swatch === 'benchmark' ? (
+        <span className="h-0.5 w-4 bg-muted-foreground" />
       ) : (
         <span
           className="h-0.5 w-4 bg-primary"
@@ -203,6 +222,7 @@ function WealthTooltip({ active, payload, label }: {
   const value = get('value') as number | undefined
   const expected = get('expected') as number | undefined
   const band = get('band') as [number, number] | undefined
+  const benchmark = get('benchmark') as number | undefined
 
   return (
     <div className="rounded-md border border-border bg-popover px-3 py-2 text-xs shadow-md">
@@ -216,6 +236,11 @@ function WealthTooltip({ active, payload, label }: {
       {band && value == null ? (
         <div className="tnum text-muted-foreground">
           {formatChf(band[0], { compact: true })} – {formatChf(band[1], { compact: true })}
+        </div>
+      ) : null}
+      {benchmark != null ? (
+        <div className="tnum text-muted-foreground">
+          Benchmark {formatChf(benchmark, { compact: true })}
         </div>
       ) : null}
     </div>

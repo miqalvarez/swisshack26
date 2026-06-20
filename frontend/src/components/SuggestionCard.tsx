@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ClientAvatar } from '@/components/ClientAvatar'
 import { TraceabilitySteps } from '@/components/TraceabilitySteps'
+import { CreateTaskButton } from '@/components/CreateTaskButton'
 import { useApplySuggestion, useDropSuggestion } from '@/lib/queries'
 import { channelLabel, formatChf, suggestionStatusLabel } from '@/lib/format'
 import type { CommentChannel, Suggestion } from '@/lib/api-types'
@@ -208,6 +209,16 @@ export function SuggestionCard({
               </Link>
             </Button>
           ) : null}
+        </div>
+
+        {/* Schedule a follow-up off this suggestion */}
+        <div className="mt-3 border-t border-border pt-3">
+          <CreateTaskButton
+            customerId={customerId}
+            suggestionId={s.id}
+            defaultTitle={`Follow up: ${s.recommendation_action}`}
+            defaultChannel={s.recommended_channel}
+          />
         </div>
       </div>
     </article>

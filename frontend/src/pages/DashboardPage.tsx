@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { ClientAvatar } from '@/components/ClientAvatar'
 import { SuggestionRow } from '@/components/SuggestionRow'
 import { NewsCard } from '@/components/NewsCard'
+import { TasksCalendar } from '@/components/TasksCalendar'
 import { EmptyState, ErrorState, Loading } from '@/components/PageState'
 import { useDashboard } from '@/lib/queries'
 import { driftLabel, formatChf, mandateLabel } from '@/lib/format'
@@ -53,6 +54,14 @@ export function DashboardPage() {
           </div>
         ))}
       </div>
+
+      {/* Schedule — follow-ups & reminders */}
+      <section>
+        <ListHeader title="Schedule" count={data.stats.open_tasks} />
+        <div className="rounded-lg border border-border bg-card p-5">
+          <TasksCalendar tasks={data.tasks} />
+        </div>
+      </section>
 
       <div className="grid gap-6 lg:grid-cols-5">
         {/* Action queue — compact triage list */}

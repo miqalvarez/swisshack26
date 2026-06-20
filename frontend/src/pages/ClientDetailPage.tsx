@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, CalendarClock } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -70,6 +70,19 @@ export function ClientDetailPage() {
               {customer.profile_description}
             </p>
           ) : null}
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+            {customer.next_review_date ? (
+              <span className="eyebrow inline-flex items-center gap-1.5">
+                <CalendarClock className="size-3.5 text-accent" />
+                Next review {formatDate(customer.next_review_date)}
+              </span>
+            ) : null}
+            {data.last_interaction ? (
+              <span className="eyebrow">
+                Last contact {formatDate(data.last_interaction)}
+              </span>
+            ) : null}
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">{mandateLabel[customer.mandate]} mandate</Badge>
@@ -286,6 +299,44 @@ function RelationshipTab({ data }: { data: CustomerDetail }) {
       </div>
 
       <aside className="space-y-4 lg:col-span-2">
+        <div className="rounded-lg border border-border bg-card p-5">
+          <div className="eyebrow mb-3">Client profile</div>
+          <dl className="space-y-3 text-sm">
+            {customer.investment_goal ? (
+              <div>
+                <dt className="eyebrow">Goal</dt>
+                <dd className="mt-0.5">{customer.investment_goal}</dd>
+              </div>
+            ) : null}
+            <div className="grid grid-cols-2 gap-3">
+              {customer.time_horizon_years != null ? (
+                <div>
+                  <dt className="eyebrow">Time horizon</dt>
+                  <dd className="tnum mt-0.5 font-medium">
+                    {customer.time_horizon_years} yrs
+                  </dd>
+                </div>
+              ) : null}
+              <div>
+                <dt className="eyebrow">Risk profile</dt>
+                <dd className="mt-0.5 font-medium">{riskLabel[customer.risk_profile]}</dd>
+              </div>
+              <div>
+                <dt className="eyebrow">Last contact</dt>
+                <dd className="tnum mt-0.5 font-medium">
+                  {data.last_interaction ? formatDate(data.last_interaction) : '—'}
+                </dd>
+              </div>
+              <div>
+                <dt className="eyebrow">Next review</dt>
+                <dd className="tnum mt-0.5 font-medium">
+                  {customer.next_review_date ? formatDate(customer.next_review_date) : '—'}
+                </dd>
+              </div>
+            </div>
+          </dl>
+        </div>
+
         <div className="rounded-lg border border-border bg-card p-5">
           <div className="eyebrow mb-3">Communication DNA</div>
           <dl className="space-y-3 text-sm">
