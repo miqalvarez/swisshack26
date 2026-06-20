@@ -1,7 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
-import { ThemeProvider } from '@/components/theme-provider'
 import { AppShell } from '@/components/layout/AppShell'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { ClientsPage } from '@/pages/ClientsPage'
@@ -17,19 +16,17 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route element={<AppShell />}>
-              <Route index element={<DashboardPage />} />
-              <Route path="clients" element={<ClientsPage />} />
-              <Route path="clients/:id" element={<ClientDetailPage />} />
-              <Route path="alerts" element={<AlertsPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </ThemeProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<AppShell />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="clients" element={<ClientsPage />} />
+            <Route path="clients/:id" element={<ClientDetailPage />} />
+            <Route path="alerts" element={<AlertsPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
     </QueryClientProvider>
   )
 }
