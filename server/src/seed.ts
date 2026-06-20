@@ -341,7 +341,66 @@ function seed() {
 
   seedSignals(now)
   seedTasks(now)
+  seedTransactions(now)
   console.log('Seed complete.')
+}
+
+/** A few months of example transaction history per client. */
+function seedTransactions(now: string) {
+  const ins = db.prepare(
+    `INSERT INTO "transaction" (id, customer_id, source_holding_id, target_holding_id, transaction_type, gross_amount, currency, executed_at, notes, created_at)
+     VALUES (@id, @customer_id, NULL, NULL, @type, @amount, 'CHF', @executed_at, @notes, @now)`,
+  )
+  const byCustomer: Record<
+    string,
+    { months: number; type: string; amount: number; notes: string }[]
+  > = {
+    raeber: [
+      { months: 22, type: 'deposit', amount: 2000000, notes: 'Re-invested proceeds from the engineering firm sale' },
+      { months: 18, type: 'buy', amount: 90000, notes: 'Bought Roche Holding AG (Genussschein)' },
+      { months: 14, type: 'withdrawal', amount: 150000, notes: 'Withdrawal — structural home renovation' },
+      { months: 9, type: 'rebalance', amount: 220000, notes: 'Quarterly rebalance into Swiss quality' },
+      { months: 5, type: 'sell', amount: 60000, notes: 'Trimmed Banque Cantonale Vaudoise' },
+      { months: 2, type: 'deposit', amount: 35000, notes: 'Dividend income credited' },
+    ],
+    schneider: [
+      { months: 24, type: 'deposit', amount: 1500000, notes: 'Foundation endowment top-up' },
+      { months: 16, type: 'buy', amount: 80000, notes: 'Bought Johnson & Johnson' },
+      { months: 11, type: 'rebalance', amount: 180000, notes: 'Rebalanced toward target weights' },
+      { months: 6, type: 'withdrawal', amount: 120000, notes: 'Grant disbursement to research foundation' },
+      { months: 3, type: 'sell', amount: 55000, notes: 'Trimmed cyclical auto-sector exposure' },
+      { months: 1, type: 'deposit', amount: 28000, notes: 'Coupon income credited' },
+    ],
+    huber: [
+      { months: 30, type: 'deposit', amount: 1800000, notes: 'Proceeds from the sustainable-agriculture exit' },
+      { months: 15, type: 'buy', amount: 70000, notes: 'Bought Nestlé S.A. (sustainability leader)' },
+      { months: 12, type: 'sell', amount: 65000, notes: 'Exited a fossil-fuel-linked holding' },
+      { months: 7, type: 'rebalance', amount: 140000, notes: 'Rebalanced into ESG-aligned names' },
+      { months: 4, type: 'deposit', amount: 32000, notes: 'Dividend income credited' },
+      { months: 1, type: 'withdrawal', amount: 90000, notes: 'Donation to reforestation initiative' },
+    ],
+    ammann: [
+      { months: 26, type: 'deposit', amount: 2500000, notes: 'Capital injection after the brand IPO' },
+      { months: 17, type: 'buy', amount: 120000, notes: 'Bought a growth equity position' },
+      { months: 13, type: 'sell', amount: 110000, notes: 'Reduced exposure during the growth drawdown' },
+      { months: 8, type: 'rebalance', amount: 260000, notes: 'Rebalanced the Growth mandate' },
+      { months: 5, type: 'buy', amount: 95000, notes: 'Added a private-markets allocation' },
+      { months: 2, type: 'withdrawal', amount: 140000, notes: 'Withdrawal — real-estate purchase' },
+    ],
+  }
+  for (const [customerId, rows] of Object.entries(byCustomer)) {
+    for (const r of rows) {
+      ins.run({
+        id: uuid(),
+        customer_id: customerId,
+        type: r.type,
+        amount: r.amount,
+        executed_at: daysFromNow(-r.months * 30),
+        notes: r.notes,
+        now,
+      })
+    }
+  }
 }
 
 /** A handful of upcoming follow-ups so the dashboard calendar has content. */
