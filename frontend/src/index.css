@@ -1,0 +1,199 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  "Private bank instrument" — a Swiss wealth-advisory workbench.
+  Warm paper, a deep pine-teal brand, brass as the single signature accent,
+  and tabular mono numerals for every figure. Deliberately not the cream+serif,
+  acid-on-black, or broadsheet-hairline defaults.
+*/
+:root {
+  --radius: 0.625rem;
+
+  --background: #f6f6f7; /* light neutral canvas */
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+
+  --primary: #e11d2b; /* SIX red */
+  --primary-foreground: #ffffff;
+  --secondary: #f3f3f5;
+  --secondary-foreground: #3f3f46;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #e11d2b; /* red brand accent */
+  --accent-foreground: #ffffff;
+
+  --destructive: #e11d2b;
+  --destructive-foreground: #ffffff;
+  --success: #16a34a;
+  --success-foreground: #f0fdf4;
+  --warning: #b45309;
+  --warning-foreground: #fffbeb;
+
+  --border: #e9e9ec;
+  --input: #e4e4e7;
+  --ring: #e11d2b;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #3f3f46;
+  --sidebar-primary: #e11d2b;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #fdeaea; /* light red active pill */
+  --sidebar-accent-foreground: #e11d2b;
+  --sidebar-border: #ececef;
+  --sidebar-ring: #e11d2b;
+
+  --chart-1: #e11d2b; /* red — primary slice */
+  --chart-2: #2f2f33; /* near-black */
+  --chart-3: #f0a58f; /* peach */
+  --chart-4: #d8d8dc; /* light gray */
+  --chart-5: #f4cba6; /* sand */
+  --chart-6: #9ca3af; /* mid gray */
+  --chart-7: #e8c7b8; /* blush */
+  --chart-8: #b3141f; /* dark red */
+}
+
+.dark {
+  --background: #0d0d0f;
+  --foreground: #f4f4f5;
+  --card: #161618;
+  --card-foreground: #f4f4f5;
+  --popover: #161618;
+  --popover-foreground: #f4f4f5;
+
+  --primary: #f04550; /* brighter red on dark */
+  --primary-foreground: #ffffff;
+  --secondary: #232327;
+  --secondary-foreground: #f4f4f5;
+  --muted: #1f1f23;
+  --muted-foreground: #a1a1aa;
+  --accent: #f04550;
+  --accent-foreground: #ffffff;
+
+  --destructive: #f04550;
+  --destructive-foreground: #ffffff;
+  --success: #4ade80;
+  --success-foreground: #052e16;
+  --warning: #f59e0b;
+  --warning-foreground: #1c1306;
+
+  --border: #ffffff14;
+  --input: #ffffff1c;
+  --ring: #f04550;
+
+  --sidebar: #131315;
+  --sidebar-foreground: #c4c4ca;
+  --sidebar-primary: #f04550;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2a1416;
+  --sidebar-accent-foreground: #f87171;
+  --sidebar-border: #ffffff12;
+  --sidebar-ring: #f04550;
+
+  --chart-1: #f04550;
+  --chart-2: #e4e4e7;
+  --chart-3: #f0a58f;
+  --chart-4: #52525b;
+  --chart-5: #f4cba6;
+  --chart-6: #a1a1aa;
+  --chart-7: #e8c7b8;
+  --chart-8: #b3141f;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-chart-8: var(--chart-8);
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 8px);
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque', 'Inter', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+    outline-color: color-mix(in oklch, var(--ring) 50%, transparent);
+  }
+  body {
+    margin: 0;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-display);
+  }
+  /* Tabular numerals everywhere figures appear — the instrument signature. */
+  .tnum {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+  /* Mono micro-labels with tracking. */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
