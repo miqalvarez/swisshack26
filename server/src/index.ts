@@ -14,6 +14,7 @@ import {
   listTasks,
   pendingSuggestionCount,
   setTaskStatus,
+  simulateAction,
   wealthSeries,
 } from './repo.js'
 
@@ -164,6 +165,31 @@ app.post('/api/customers/:id/comments', (req, res) => {
     now,
   })
   res.status(201).json(db.prepare(`SELECT * FROM comment WHERE id = ?`).get(commentId))
+})
+
+// What-if: simulate an action on the client's holdings
+const simSchema = z.object({
+  action: z.enum(['sell', 'reduce', 'add', 'swap']),
+  holding_id: z.string().optional(),
+  amount: z.number().nonnegative().default(0),
+  new_name: z.string().optional(),
+  new_sector: z.string().optional(),
+  new_asset_type: z
+    .enum(['property', 'cash', 'stock', 'crypto', 'bond', 'fund', 'other'])
+    .optional(),
+})
+
+app.post('/api/customers/:id/simulate', (req, res) => {
+  const exists = db.prepare(`SELECT 1 FROM customer WHERE id = ?`).get(req.params.id)
+  if (!exists) return res.status(404).json({ error: 'customer_not_found' })
+  const parsed = simSchema.safeParse(req.body)
+  if (!parsed.success)
+    return res.status(400).json({ error: 'invalid_body', details: parsed.error.flatten() })
+  try {
+    res.json(simulateAction(req.params.id, parsed.data))
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message })
+  }
 })
 
 // UC: Apply suggestion

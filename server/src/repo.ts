@@ -1,5 +1,5 @@
 import { db, nowIso, uuid } from './db.js'
-import type { Holding } from './types.js'
+import type { AssetType, Holding } from './types.js'
 
 /** Per-sub-asset-class drift vs target, in percentage points of total weight. */
 export function computeDrift(customerId: string): {
@@ -344,4 +344,262 @@ export function lastInteraction(customerId: string): string | null {
     )
     .get(customerId) as { d: string | null }
   return row.d ?? null
+}
+
+// --- What-if simulation -----------------------------------------------------
+
+const EXPECTED_RETURN: Record<AssetType, number> = {
+  stock: 0.065,
+  bond: 0.025,
+  fund: 0.05,
+  cash: 0.005,
+  crypto: 0.12,
+  property: 0.04,
+  other: 0.03,
+}
+const VOLATILITY: Record<AssetType, number> = {
+  stock: 0.16,
+  bond: 0.05,
+  fund: 0.12,
+  cash: 0.004,
+  crypto: 0.6,
+  property: 0.1,
+  other: 0.1,
+}
+
+/** Per-persona DNA affinities/aversions used to score alignment. */
+const DNA_PROFILE: Record<
+  string,
+  { affinities: string[]; aversions: string[] }
+> = {
+  raeber: {
+    affinities: ['swiss', 'schweiz', 'dividend', 'health care', 'telecommunication', 'staples'],
+    aversions: ['us tech', 'technology', 'ai', 'nasdaq', 'usa', 'speculat'],
+  },
+  schneider: {
+    affinities: ['health care', 'research', 'swiss', 'schweiz', 'pharma'],
+    aversions: ['tobacco', 'weapons'],
+  },
+  huber: {
+    affinities: ['sustainab', 'reforest', 'renewable', 'staples', 'consumer'],
+    aversions: ['deforest', 'palm oil', 'fossil', 'oil', 'coal', 'mining'],
+  },
+  ammann: {
+    affinities: ['swiss', 'schweiz', 'premium', 'governance', 'quality'],
+    aversions: ['labour', 'scandal', 'controvers', 'exploitation', 'reputation'],
+  },
+}
+
+interface SimHolding {
+  name: string
+  amount: number
+  asset_type: AssetType
+  sub_asset_class: string | null
+  target_amount: number | null
+  sector?: string | null
+  region?: string | null
+}
+
+export interface SimInput {
+  action: 'sell' | 'reduce' | 'add' | 'swap'
+  holding_id?: string
+  amount: number
+  new_name?: string
+  new_sector?: string
+  new_asset_type?: AssetType
+}
+
+function expectedReturn(hs: SimHolding[]): number {
+  const total = hs.reduce((s, h) => s + h.amount, 0) || 1
+  return hs.reduce((s, h) => s + h.amount * EXPECTED_RETURN[h.asset_type], 0) / total
+}
+function volatility(hs: SimHolding[]): number {
+  const total = hs.reduce((s, h) => s + h.amount, 0) || 1
+  return hs.reduce((s, h) => s + h.amount * VOLATILITY[h.asset_type], 0) / total
+}
+function concentration(hs: SimHolding[]): number {
+  const total = hs.reduce((s, h) => s + h.amount, 0) || 1
+  return Math.max(0, ...hs.map((h) => h.amount / total)) * 100
+}
+function driftOf(hs: SimHolding[]): { maxDriftPp: number; status: string } {
+  const groups = new Map<string, { cur: number; tgt: number }>()
+  for (const h of hs) {
+    const k = h.sub_asset_class ?? 'Other'
+    const g = groups.get(k) ?? { cur: 0, tgt: 0 }
+    g.cur += h.amount
+    g.tgt += h.target_amount ?? h.amount
+    groups.set(k, g)
+  }
+  const totCur = [...groups.values()].reduce((s, g) => s + g.cur, 0) || 1
+  const totTgt = [...groups.values()].reduce((s, g) => s + g.tgt, 0) || 1
+  let max = 0
+  for (const g of groups.values()) {
+    max = Math.max(max, Math.abs((g.cur / totCur - g.tgt / totTgt) * 100))
+  }
+  const status = max > 2 ? 'breach' : max > 0.5 ? 'minor-drift' : 'on-target'
+  return { maxDriftPp: Number(max.toFixed(2)), status }
+}
+
+/** Affinity of a client toward an instrument's text, in [-1, 1]. */
+function affinity(customerId: string, text: string): { score: number; reasons: string[] } {
+  const p = DNA_PROFILE[customerId]
+  if (!p) return { score: 0, reasons: [] }
+  const t = text.toLowerCase()
+  const reasons: string[] = []
+  let score = 0
+  for (const a of p.affinities) if (t.includes(a)) { score += 0.5; reasons.push(`aligns with “${a}”`) }
+  for (const a of p.aversions) if (t.includes(a)) { score -= 0.7; reasons.push(`conflicts with “${a}”`) }
+  return { score: Math.max(-1, Math.min(1, score)), reasons }
+}
+
+export interface SimulationResult {
+  action: SimInput['action']
+  amount: number
+  cash_raised: number
+  expected_return: { before: number; after: number; delta_pp: number }
+  dna: { score: number; reasons: string[] }
+  risk: {
+    vol_before: number
+    vol_after: number
+    vol_delta_pp: number
+    concentration_before: number
+    concentration_after: number
+    label: 'lower' | 'similar' | 'higher'
+  }
+  drift: { before: number; after: number; status_after: string }
+  verdict: 'recommended' | 'caution' | 'discouraged'
+  summary: string
+}
+
+export function simulateAction(customerId: string, input: SimInput): SimulationResult {
+  const rows = db
+    .prepare(
+      `SELECT name, amount, asset_type, sub_asset_class, target_amount, sector, region
+       FROM holding WHERE customer_id = ? AND is_active = 1`,
+    )
+    .all(customerId) as SimHolding[]
+
+  const before: SimHolding[] = rows.map((h) => ({ ...h }))
+  const after: SimHolding[] = rows.map((h) => ({ ...h }))
+  const source = input.holding_id
+    ? (db
+        .prepare(`SELECT name, amount, asset_type, sub_asset_class, target_amount, sector, region FROM holding WHERE id = ? AND customer_id = ?`)
+        .get(input.holding_id, customerId) as SimHolding | undefined)
+    : undefined
+
+  const idxOf = (name: string) => after.findIndex((h) => h.name === name && h.amount > 0)
+  let cashRaised = 0
+  const reasons: string[] = []
+  let dnaScore = 0
+
+  const newType = input.new_asset_type ?? 'stock'
+  const newText = `${input.new_name ?? ''} ${input.new_sector ?? ''}`.trim()
+
+  if (input.action === 'sell' || input.action === 'reduce') {
+    if (!source) throw new Error('holding_required')
+    const i = idxOf(source.name)
+    const amt = input.action === 'sell' ? source.amount : Math.min(input.amount, source.amount)
+    if (i >= 0) {
+      after[i] = { ...after[i], amount: after[i].amount - amt }
+      if (after[i].amount <= 1) after.splice(i, 1)
+    }
+    cashRaised = amt
+    // Selling something the client is averse to is good alignment; selling an
+    // affinity is poor.
+    const aff = affinity(customerId, `${source.name} ${source.sector ?? ''} ${source.region ?? ''}`)
+    dnaScore = -aff.score // invert: removing an aversion (-) -> positive
+    reasons.push(...aff.reasons.map((r) => `Holding ${r}`))
+  } else if (input.action === 'add') {
+    const amt = input.amount
+    const cashIdx = after.findIndex((h) => h.asset_type === 'cash')
+    if (cashIdx >= 0) {
+      after[cashIdx] = { ...after[cashIdx], amount: Math.max(0, after[cashIdx].amount - amt) }
+    }
+    after.push({
+      name: input.new_name ?? 'New position',
+      amount: amt,
+      asset_type: newType,
+      sub_asset_class: input.new_sector ?? 'New sleeve',
+      target_amount: amt,
+    })
+    const aff = affinity(customerId, newText)
+    dnaScore = aff.score
+    reasons.push(...aff.reasons.map((r) => `New position ${r}`))
+  } else {
+    // swap: move `amount` from source into a same-sleeve replacement
+    if (!source) throw new Error('holding_required')
+    const i = idxOf(source.name)
+    const amt = Math.min(input.amount, source.amount)
+    if (i >= 0) {
+      after[i] = { ...after[i], amount: after[i].amount - amt }
+      if (after[i].amount <= 1) after.splice(i, 1)
+    }
+    after.push({
+      name: input.new_name ?? 'Replacement',
+      amount: amt,
+      asset_type: newType,
+      sub_asset_class: source.sub_asset_class, // stay in sleeve -> mandate kept
+      target_amount: amt,
+    })
+    const remove = affinity(customerId, `${source.name} ${source.sector ?? ''} ${source.region ?? ''}`)
+    const acquire = affinity(customerId, newText)
+    // The replacement drives alignment; removing a conflicting holding is a bonus.
+    dnaScore = acquire.score
+    if (remove.score < 0) dnaScore = Math.min(1, dnaScore + -remove.score * 0.5)
+    reasons.push(...acquire.reasons.map((r) => `Replacement ${r}`))
+    if (remove.score < 0)
+      reasons.push(...remove.reasons.map((r) => `Exiting a holding that ${r}`))
+  }
+
+  const erB = expectedReturn(before)
+  const erA = expectedReturn(after)
+  const volB = volatility(before)
+  const volA = volatility(after)
+  const concB = concentration(before)
+  const concA = concentration(after)
+  const driftB = driftOf(before)
+  const driftA = driftOf(after)
+
+  const dna100 = Math.round(((dnaScore + 1) / 2) * 100)
+  const volDeltaPp = (volA - volB) * 100
+  const riskLabel: 'lower' | 'similar' | 'higher' =
+    volDeltaPp < -0.3 ? 'lower' : volDeltaPp > 0.3 ? 'higher' : 'similar'
+
+  const driftWorse = driftA.status === 'breach' && driftA.maxDriftPp > driftB.maxDriftPp + 0.1
+  let verdict: SimulationResult['verdict']
+  if (dna100 >= 65 && !driftWorse && volDeltaPp <= 3) verdict = 'recommended'
+  else if (dna100 < 40 || driftWorse || volDeltaPp > 8) verdict = 'discouraged'
+  else verdict = 'caution'
+
+  const summary =
+    verdict === 'recommended'
+      ? 'Fits the client’s DNA and respects the mandate.'
+      : verdict === 'discouraged'
+        ? 'Conflicts with the client’s DNA, mandate drift, or risk budget.'
+        : 'Workable, but review the trade-offs below before proposing it.'
+
+  if (reasons.length === 0) reasons.push('Neutral on the client’s stated preferences.')
+
+  return {
+    action: input.action,
+    amount: input.action === 'sell' ? (source?.amount ?? 0) : input.amount,
+    cash_raised: Math.round(cashRaised),
+    expected_return: {
+      before: Number((erB * 100).toFixed(2)),
+      after: Number((erA * 100).toFixed(2)),
+      delta_pp: Number(((erA - erB) * 100).toFixed(2)),
+    },
+    dna: { score: dna100, reasons: reasons.slice(0, 4) },
+    risk: {
+      vol_before: Number((volB * 100).toFixed(1)),
+      vol_after: Number((volA * 100).toFixed(1)),
+      vol_delta_pp: Number(volDeltaPp.toFixed(1)),
+      concentration_before: Number(concB.toFixed(1)),
+      concentration_after: Number(concA.toFixed(1)),
+      label: riskLabel,
+    },
+    drift: { before: driftB.maxDriftPp, after: driftA.maxDriftPp, status_after: driftA.status },
+    verdict,
+    summary,
+  }
 }
