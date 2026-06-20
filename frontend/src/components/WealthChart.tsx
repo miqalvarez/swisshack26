@@ -4,17 +4,26 @@ import {
   Line,
   ReferenceLine,
   ResponsiveContainer,
+  Scatter,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts'
 
 import { formatChf, formatPct } from '@/lib/format'
-import type { WealthSeries } from '@/lib/api-types'
+import type { Milestone, MilestoneKind, WealthSeries } from '@/lib/api-types'
 
 function monthLabel(iso: string): string {
   const d = new Date(iso)
   return new Intl.DateTimeFormat('en-CH', { month: 'short', year: '2-digit' }).format(d)
+}
+
+const KIND_LABEL: Record<MilestoneKind, string> = {
+  deposit: 'Deposit',
+  withdrawal: 'Withdrawal',
+  rebalance: 'Rebalance',
+  advice: 'Advice applied',
+  market: 'Market move',
 }
 
 interface Row {
@@ -23,6 +32,7 @@ interface Row {
   expected?: number
   band?: [number, number]
   benchmark?: number
+  mvalue?: number
 }
 
 export function WealthChart({ wealth }: { wealth: WealthSeries }) {
@@ -30,12 +40,13 @@ export function WealthChart({ wealth }: { wealth: WealthSeries }) {
   const todayDate = hist[hist.length - 1]?.date
   const current = hist[hist.length - 1]?.value ?? 0
   const benchByDate = new Map(wealth.benchmark.map((b) => [b.date, b.value]))
+  const mileByDate = new Map(wealth.milestones.map((m) => [m.date, m]))
 
   const data: Row[] = [
     ...hist.map((h, i) =>
       i === hist.length - 1
-        ? { date: h.date, value: h.value, expected: h.value, band: [h.value, h.value] as [number, number], benchmark: benchByDate.get(h.date) }
-        : { date: h.date, value: h.value, benchmark: benchByDate.get(h.date) },
+        ? { date: h.date, value: h.value, expected: h.value, band: [h.value, h.value] as [number, number], benchmark: benchByDate.get(h.date), mvalue: mileByDate.get(h.date)?.value }
+        : { date: h.date, value: h.value, benchmark: benchByDate.get(h.date), mvalue: mileByDate.get(h.date)?.value },
     ),
     ...wealth.forecast.map((f) => ({
       date: f.date,
@@ -96,7 +107,16 @@ export function WealthChart({ wealth }: { wealth: WealthSeries }) {
               axisLine={false}
               domain={['dataMin - 400000', 'dataMax + 400000']}
             />
-            <Tooltip content={<WealthTooltip />} />
+            <Tooltip
+              content={(props: { active?: boolean; payload?: unknown; label?: unknown }) => (
+                <WealthTooltip
+                  active={props.active}
+                  payload={props.payload as never}
+                  label={props.label as string | undefined}
+                  milestones={mileByDate}
+                />
+              )}
+            />
 
             {/* Forecast uncertainty band */}
             <Area
@@ -147,6 +167,9 @@ export function WealthChart({ wealth }: { wealth: WealthSeries }) {
                 }}
               />
             ) : null}
+
+            {/* Milestone markers — hover for detail */}
+            <Scatter dataKey="mvalue" shape={<MilestoneDot />} isAnimationActive={false} />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
@@ -155,7 +178,7 @@ export function WealthChart({ wealth }: { wealth: WealthSeries }) {
         <Legend swatch="solid">History</Legend>
         <Legend swatch="benchmark">Benchmark</Legend>
         <Legend swatch="dashed">Projection</Legend>
-        <Legend swatch="band">Range</Legend>
+        <Legend swatch="milestone">Milestones</Legend>
         <span className="ml-auto">Illustrative projection · not advice</span>
       </div>
     </div>
@@ -192,7 +215,7 @@ function Legend({
   swatch,
   children,
 }: {
-  swatch: 'solid' | 'dashed' | 'band' | 'benchmark'
+  swatch: 'solid' | 'dashed' | 'band' | 'benchmark' | 'milestone'
   children: React.ReactNode
 }) {
   return (
@@ -201,6 +224,8 @@ function Legend({
         <span className="h-2 w-4 rounded-sm bg-primary/15" />
       ) : swatch === 'benchmark' ? (
         <span className="h-0.5 w-4 bg-muted-foreground" />
+      ) : swatch === 'milestone' ? (
+        <span className="size-2.5 rounded-full border-2 border-accent bg-card" />
       ) : (
         <span
           className="h-0.5 w-4 bg-primary"
@@ -212,10 +237,28 @@ function Legend({
   )
 }
 
-function WealthTooltip({ active, payload, label }: {
+/** A ringed marker drawn at each milestone point on the line. */
+function MilestoneDot(props: { cx?: number; cy?: number; payload?: Row }) {
+  const { cx, cy, payload } = props
+  if (cx == null || cy == null || payload?.mvalue == null) return null
+  return (
+    <g>
+      <circle cx={cx} cy={cy} r={6} fill="var(--color-card)" stroke="var(--color-accent)" strokeWidth={2} />
+      <circle cx={cx} cy={cy} r={2} fill="var(--color-accent)" />
+    </g>
+  )
+}
+
+function WealthTooltip({
+  active,
+  payload,
+  label,
+  milestones,
+}: {
   active?: boolean
   payload?: Array<{ dataKey: string; value: number | [number, number] }>
   label?: string
+  milestones: Map<string, Milestone>
 }) {
   if (!active || !payload?.length) return null
   const get = (k: string) => payload.find((p) => p.dataKey === k)?.value
@@ -223,9 +266,10 @@ function WealthTooltip({ active, payload, label }: {
   const expected = get('expected') as number | undefined
   const band = get('band') as [number, number] | undefined
   const benchmark = get('benchmark') as number | undefined
+  const milestone = label ? milestones.get(label) : undefined
 
   return (
-    <div className="rounded-md border border-border bg-popover px-3 py-2 text-xs shadow-md">
+    <div className="max-w-56 rounded-md border border-border bg-popover px-3 py-2 text-xs shadow-md">
       <div className="eyebrow mb-1">{label ? monthLabel(label) : ''}</div>
       {value != null ? (
         <div className="tnum font-medium">{formatChf(value)}</div>
@@ -241,6 +285,28 @@ function WealthTooltip({ active, payload, label }: {
       {benchmark != null ? (
         <div className="tnum text-muted-foreground">
           Benchmark {formatChf(benchmark, { compact: true })}
+        </div>
+      ) : null}
+      {milestone ? (
+        <div className="mt-2 border-t border-border pt-2">
+          <div className="flex items-center gap-1.5">
+            <span className="size-2 rounded-full bg-accent" />
+            <span className="eyebrow !text-accent">{KIND_LABEL[milestone.kind]}</span>
+          </div>
+          <div className="mt-1 font-medium leading-snug text-foreground">
+            {milestone.title}
+          </div>
+          {milestone.amount != null ? (
+            <div className={`tnum mt-0.5 ${milestone.amount >= 0 ? 'text-success' : 'text-destructive'}`}>
+              {milestone.amount >= 0 ? '+' : ''}
+              {formatChf(milestone.amount)}
+            </div>
+          ) : milestone.effect_pct !== 0 ? (
+            <div className={`tnum mt-0.5 ${milestone.effect_pct >= 0 ? 'text-success' : 'text-destructive'}`}>
+              {milestone.effect_pct >= 0 ? '+' : ''}
+              {milestone.effect_pct}% on wealth
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

@@ -65,13 +65,62 @@ function hashString(s: string): number {
   return h >>> 0
 }
 
+export type MilestoneKind =
+  | 'deposit'
+  | 'withdrawal'
+  | 'rebalance'
+  | 'advice'
+  | 'market'
+
+export interface Milestone {
+  date: string
+  value: number
+  kind: MilestoneKind
+  title: string
+  amount: number | null // signed CHF for deposits/withdrawals
+  effect_pct: number // approx % the event moved wealth
+}
+
 export interface WealthSeries {
   history: { date: string; value: number }[]
   forecast: { date: string; expected: number; low: number; high: number }[]
   benchmark: { date: string; value: number }[] // same start, market path
+  milestones: Milestone[]
   cagr: number // historical, annualised
   benchmarkCagr: number
   projectedValue: number // expected value at the forecast horizon
+}
+
+interface MilestoneSpec {
+  monthsAgo: number
+  kind: MilestoneKind
+  title: string
+  mult: number // multiplicative level shift applied to the wealth path
+}
+
+/** Per-client headline events that shaped the wealth track. */
+const MILESTONES: Record<string, MilestoneSpec[]> = {
+  raeber: [
+    { monthsAgo: 30, kind: 'deposit', title: 'Re-invested proceeds from the firm sale', mult: 1.09 },
+    { monthsAgo: 18, kind: 'withdrawal', title: 'Withdrawal — structural home renovation', mult: 0.985 },
+    { monthsAgo: 9, kind: 'rebalance', title: 'Quarterly rebalance into Swiss quality', mult: 1.0 },
+    { monthsAgo: 3, kind: 'market', title: 'Defensive sleeve cushioned the market dip', mult: 1.005 },
+  ],
+  schneider: [
+    { monthsAgo: 26, kind: 'deposit', title: 'Foundation endowment top-up', mult: 1.07 },
+    { monthsAgo: 14, kind: 'advice', title: 'Trimmed cyclical auto-sector exposure', mult: 1.01 },
+    { monthsAgo: 5, kind: 'withdrawal', title: 'Grant disbursement to research', mult: 0.98 },
+  ],
+  huber: [
+    { monthsAgo: 31, kind: 'deposit', title: 'Proceeds from the sustainable-ag exit', mult: 1.08 },
+    { monthsAgo: 16, kind: 'advice', title: 'Exited a fossil-linked holding', mult: 1.006 },
+    { monthsAgo: 4, kind: 'market', title: 'Sustainability names rallied', mult: 1.02 },
+  ],
+  ammann: [
+    { monthsAgo: 27, kind: 'deposit', title: 'Capital injection after the brand IPO', mult: 1.1 },
+    { monthsAgo: 16, kind: 'market', title: 'Growth drawdown across the book', mult: 0.95 },
+    { monthsAgo: 6, kind: 'advice', title: 'Exited a reputationally risky name', mult: 1.0 },
+  ],
 }
 
 /**
@@ -100,11 +149,19 @@ export function wealthSeries(
   const vol = volByRisk[risk] ?? 0.02
 
   const months = 36
-  // Forward growth factors, then scaled so the final point equals `current`.
+  // Headline events that shifted the level, keyed by month index.
+  const specs = MILESTONES[customerId] ?? []
+  const eventAtMonth = new Map<number, MilestoneSpec>()
+  for (const s of specs) eventAtMonth.set(months - s.monthsAgo, s)
+
+  // Forward growth factors (with event bumps), scaled so the final point equals `current`.
   const factors: number[] = [1]
   for (let i = 0; i < months; i++) {
     const r = drift + (rng() * 2 - 1) * vol
-    factors.push(factors[factors.length - 1] * (1 + r))
+    let f = factors[factors.length - 1] * (1 + r)
+    const ev = eventAtMonth.get(i + 1)
+    if (ev) f *= ev.mult
+    factors.push(f)
   }
   const scale = current / factors[factors.length - 1]
 
@@ -119,6 +176,22 @@ export function wealthSeries(
     date: startOfMonth(i - months),
     value: Math.round(f * scale),
   }))
+
+  const milestones: Milestone[] = specs
+    .map((s) => {
+      const idx = months - s.monthsAgo
+      const value = history[idx].value
+      const isFlow = s.kind === 'deposit' || s.kind === 'withdrawal'
+      return {
+        date: history[idx].date,
+        value,
+        kind: s.kind,
+        title: s.title,
+        amount: isFlow ? Math.round((s.mult - 1) * value) : null,
+        effect_pct: Number(((s.mult - 1) * 100).toFixed(1)),
+      }
+    })
+    .sort((a, b) => a.date.localeCompare(b.date))
 
   // Benchmark: a shared market path (same seed for every client) starting from
   // the same initial wealth, so out/under-performance is comparable.
@@ -157,6 +230,7 @@ export function wealthSeries(
     history,
     forecast,
     benchmark,
+    milestones,
     cagr: Number(cagr.toFixed(1)),
     benchmarkCagr: Number(benchmarkCagr.toFixed(1)),
     projectedValue: forecast[forecast.length - 1].expected,

@@ -162,10 +162,27 @@ export interface DashboardData {
   tasks: Task[]
 }
 
+export type MilestoneKind =
+  | 'deposit'
+  | 'withdrawal'
+  | 'rebalance'
+  | 'advice'
+  | 'market'
+
+export interface Milestone {
+  date: string
+  value: number
+  kind: MilestoneKind
+  title: string
+  amount: number | null
+  effect_pct: number
+}
+
 export interface WealthSeries {
   history: { date: string; value: number }[]
   forecast: { date: string; expected: number; low: number; high: number }[]
   benchmark: { date: string; value: number }[]
+  milestones: Milestone[]
   cagr: number
   benchmarkCagr: number
   projectedValue: number
