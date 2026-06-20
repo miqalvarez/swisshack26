@@ -14,14 +14,14 @@ export function PolarisMark({ className }: { className?: string }) {
     >
       {/* arrowhead pointing up to the star */}
       <path
-        d="M50 30 L63 76 L50 65 L37 76 Z"
+        d="M50 31 L66 75 L50 63 L34 75 Z"
         stroke="currentColor"
         strokeWidth={3.2}
         strokeLinejoin="round"
       />
       {/* centre ridge */}
       <path
-        d="M50 31 L50 65"
+        d="M50 32 L50 63"
         stroke="currentColor"
         strokeWidth={3.2}
         strokeLinecap="round"
