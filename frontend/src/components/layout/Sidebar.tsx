@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, Inbox } from 'lucide-react'
+import { LayoutDashboard, Users, Inbox, Star } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { useDashboard } from '@/lib/queries'
@@ -16,12 +16,19 @@ export function Sidebar() {
 
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
-      <div className="flex h-16 items-center px-5">
-        <img
-          src="/six-logo.svg"
-          alt="SIX"
-          className="h-7 w-auto"
-        />
+      <div className="flex h-16 items-center gap-2.5 px-5">
+        <span className="flex size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+          <Star className="size-4" fill="currentColor" strokeWidth={0} />
+        </span>
+        <div className="leading-tight">
+          <div className="font-display text-base font-semibold tracking-tight">
+            Polaris
+          </div>
+          <div className="flex items-center gap-1.5 eyebrow !text-sidebar-foreground/45">
+            by
+            <img src="/six-logo.svg" alt="SIX" className="h-2.5 w-auto opacity-80" />
+          </div>
+        </div>
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 px-3 py-4">

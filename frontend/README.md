@@ -1,4 +1,4 @@
-# Wealth Advisory Workbench — Frontend
+# Polaris by SIX — Frontend
 
 Frontend for the SIX · Noumena · NTT Data challenge **"The Next Generation of
 Wealth Advisory"**. A dashboard for a **Wealth Manager (WM)** to understand a

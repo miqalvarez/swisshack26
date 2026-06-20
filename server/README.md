@@ -1,4 +1,4 @@
-# Wealth Advisory Workbench — Backend
+# Polaris by SIX — Backend
 
 Real persistence + WM use-case endpoints for the advisory workbench. Implements
 the UML class diagram (WM, Customer, Comment, Holding, Transaction, Suggestion,

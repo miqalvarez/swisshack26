@@ -1,9 +1,9 @@
-# swisshack26 — Next-Gen Wealth Advisory Workbench
+# Polaris by SIX — Next-Gen Wealth Advisory Workbench
 
-A relationship/wealth-manager (**WM**) workbench for the SIX · Noumena · NTT Data
-challenge *"The Next Generation of Wealth Advisory"*. The WM sees what changed
-for each client, understands why (news → analysis → advice → action), and acts —
-while the client always decides.
+**Polaris** is a wealth-manager (**WM**) workbench for the SIX · Noumena · NTT Data
+challenge *"The Next Generation of Wealth Advisory"* — the guiding star for the
+advisor. The WM sees what changed for each client, understands why
+(news → analysis → advice → action), and acts — while the client always decides.
 
 This repo holds two apps:
 
