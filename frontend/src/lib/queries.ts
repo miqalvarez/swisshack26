@@ -4,7 +4,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 
-import { api } from './api'
+import { api, type NewTaskInput } from './api'
 import type { CommentChannel } from './api-types'
 
 export function useDashboard() {
@@ -49,6 +49,22 @@ export function useAddComment(customerId: string) {
   return useMutation({
     mutationFn: (body: { channel: CommentChannel; content: string }) =>
       api.addComment(customerId, body),
+    onSuccess: refresh,
+  })
+}
+
+export function useCreateTask(customerId?: string) {
+  const refresh = useRefreshAll(customerId)
+  return useMutation({
+    mutationFn: (body: NewTaskInput) => api.createTask(body),
+    onSuccess: refresh,
+  })
+}
+
+export function useCompleteTask(customerId?: string) {
+  const refresh = useRefreshAll(customerId)
+  return useMutation({
+    mutationFn: (taskId: string) => api.completeTask(taskId),
     onSuccess: refresh,
   })
 }

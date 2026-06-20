@@ -151,6 +151,7 @@ export interface DashboardData {
     clients: number
     pending_suggestions: number
     assets_under_advice: number
+    open_tasks: number
   }
   customers: CustomerSummary[]
   news: NewsItem[]
@@ -158,13 +159,35 @@ export interface DashboardData {
     customer_name: string
     accent_color: string | null
   })[]
+  tasks: Task[]
 }
 
 export interface WealthSeries {
   history: { date: string; value: number }[]
   forecast: { date: string; expected: number; low: number; high: number }[]
+  benchmark: { date: string; value: number }[]
   cagr: number
+  benchmarkCagr: number
   projectedValue: number
+}
+
+export type TaskStatus = 'open' | 'done'
+export type TaskPriority = 'low' | 'medium' | 'high'
+
+export interface Task {
+  id: string
+  wm_id: string
+  customer_id: string | null
+  customer_name: string | null
+  accent_color: string | null
+  suggestion_id: string | null
+  title: string
+  description: string | null
+  channel: CommentChannel | null
+  due_date: string
+  status: TaskStatus
+  priority: TaskPriority
+  created_at: string
 }
 
 export interface CustomerDetail {
@@ -178,13 +201,18 @@ export interface CustomerDetail {
     email: string | null
     technical_level: number | null
     preferred_channel: CommentChannel | null
+    investment_goal: string | null
+    time_horizon_years: number | null
+    next_review_date: string | null
   }
   drift: DriftInfo
   total_value: number
   pending_suggestions: number
   wealth: WealthSeries
+  last_interaction: string | null
   holdings: Holding[]
   transactions: Transaction[]
   suggestions: Suggestion[]
   comments: Comment[]
+  tasks: Task[]
 }

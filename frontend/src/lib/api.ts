@@ -3,7 +3,19 @@ import type {
   CommentChannel,
   CustomerDetail,
   DashboardData,
+  Task,
+  TaskPriority,
 } from './api-types'
+
+export interface NewTaskInput {
+  title: string
+  description?: string
+  customer_id?: string
+  suggestion_id?: string
+  channel?: CommentChannel
+  due_date: string
+  priority?: TaskPriority
+}
 
 async function http<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
@@ -32,4 +44,8 @@ export const api = {
     http<{ ok: true }>(`/api/suggestions/${id}/apply`, { method: 'POST' }),
   dropSuggestion: (id: string) =>
     http<{ ok: true }>(`/api/suggestions/${id}/drop`, { method: 'POST' }),
+  createTask: (body: NewTaskInput) =>
+    http<Task>('/api/tasks', { method: 'POST', body: JSON.stringify(body) }),
+  completeTask: (id: string) =>
+    http<{ ok: true }>(`/api/tasks/${id}/complete`, { method: 'POST' }),
 }

@@ -15,6 +15,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ClientAvatar } from '@/components/ClientAvatar'
+import { TraceabilitySteps } from '@/components/TraceabilitySteps'
 import { useApplySuggestion, useDropSuggestion } from '@/lib/queries'
 import { channelLabel, formatChf, suggestionStatusLabel } from '@/lib/format'
 import type { CommentChannel, Suggestion } from '@/lib/api-types'
@@ -68,6 +69,11 @@ export function SuggestionCard({
       </div>
 
       <div className="p-4">
+        {/* Traceability: news -> analysis -> advice -> action */}
+        <div className="mb-4 rounded-md border border-border bg-muted/20 px-2 py-3">
+          <TraceabilitySteps suggestion={s} />
+        </div>
+
         {customerName ? (
           <div className="mb-3 flex items-center gap-2">
             <ClientAvatar name={customerName} accent={accent} size="sm" />
