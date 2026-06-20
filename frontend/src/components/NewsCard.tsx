@@ -15,8 +15,39 @@ function sentiment(score: number | null): {
   return { label: 'Neutral', className: 'text-muted-foreground' }
 }
 
-export function NewsCard({ item }: { item: NewsItem }) {
+export function NewsCard({
+  item,
+  compact,
+}: {
+  item: NewsItem
+  compact?: boolean
+}) {
   const s = sentiment(item.sentiment_score)
+
+  if (compact) {
+    return (
+      <a
+        href={item.source_url}
+        target="_blank"
+        rel="noreferrer"
+        className="group flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/40"
+      >
+        <span
+          className={cn('mt-1.5 size-2 shrink-0 rounded-full', dotClass(s.className))}
+          aria-hidden
+        />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-medium leading-snug group-hover:text-accent">
+            {item.title}
+          </div>
+          <div className="mt-0.5 truncate text-xs text-muted-foreground">
+            {item.customer_name} · {formatDate(item.published_at)}
+          </div>
+        </div>
+      </a>
+    )
+  }
+
   return (
     <a
       href={item.source_url}
@@ -51,4 +82,10 @@ export function NewsCard({ item }: { item: NewsItem }) {
       </div>
     </a>
   )
+}
+
+function dotClass(textClass: string): string {
+  if (textClass.includes('success')) return 'bg-success'
+  if (textClass.includes('destructive')) return 'bg-destructive'
+  return 'bg-muted-foreground'
 }
