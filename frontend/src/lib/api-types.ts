@@ -190,6 +190,36 @@ export interface Task {
   created_at: string
 }
 
+export type SimAction = 'sell' | 'reduce' | 'add' | 'swap'
+
+export interface SimInput {
+  action: SimAction
+  holding_id?: string
+  amount?: number
+  new_name?: string
+  new_sector?: string
+  new_asset_type?: AssetType
+}
+
+export interface SimulationResult {
+  action: SimAction
+  amount: number
+  cash_raised: number
+  expected_return: { before: number; after: number; delta_pp: number }
+  dna: { score: number; reasons: string[] }
+  risk: {
+    vol_before: number
+    vol_after: number
+    vol_delta_pp: number
+    concentration_before: number
+    concentration_after: number
+    label: 'lower' | 'similar' | 'higher'
+  }
+  drift: { before: number; after: number; status_after: DriftStatus }
+  verdict: 'recommended' | 'caution' | 'discouraged'
+  summary: string
+}
+
 export interface CustomerDetail {
   customer: CustomerSummary & {
     mandate: MandateType

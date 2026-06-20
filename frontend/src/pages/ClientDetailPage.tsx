@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { ClientAvatar } from '@/components/ClientAvatar'
 import { HoldingsDonut } from '@/components/HoldingsDonut'
 import { WealthChart } from '@/components/WealthChart'
+import { SimulationPanel } from '@/components/SimulationPanel'
 import { SuggestionCard } from '@/components/SuggestionCard'
 import { AddClientData } from '@/components/AddClientData'
 import { EmptyState, ErrorState, Loading } from '@/components/PageState'
@@ -29,6 +30,7 @@ import type { CustomerDetail } from '@/lib/api-types'
 const TABS = [
   { id: 'holdings', label: 'Portfolio' },
   { id: 'suggestions', label: 'Suggestions' },
+  { id: 'simulate', label: 'Simulate' },
   { id: 'history', label: 'History' },
   { id: 'relationship', label: 'Relationship · DNA' },
 ] as const
@@ -139,6 +141,9 @@ export function ClientDetailPage() {
             ))
           )}
         </div>
+      )}
+      {tab === 'simulate' && (
+        <SimulationPanel customerId={customer.id} holdings={data.holdings} />
       )}
       {tab === 'history' && <HistoryTab data={data} />}
       {tab === 'relationship' && <RelationshipTab data={data} />}

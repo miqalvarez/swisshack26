@@ -5,7 +5,7 @@ import {
 } from '@tanstack/react-query'
 
 import { api, type NewTaskInput } from './api'
-import type { CommentChannel } from './api-types'
+import type { CommentChannel, SimInput } from './api-types'
 
 export function useDashboard() {
   return useQuery({ queryKey: ['dashboard'], queryFn: api.dashboard })
@@ -66,5 +66,12 @@ export function useCompleteTask(customerId?: string) {
   return useMutation({
     mutationFn: (taskId: string) => api.completeTask(taskId),
     onSuccess: refresh,
+  })
+}
+
+/** What-if simulation — pure scoring, does not persist. */
+export function useSimulate(customerId: string) {
+  return useMutation({
+    mutationFn: (input: SimInput) => api.simulate(customerId, input),
   })
 }

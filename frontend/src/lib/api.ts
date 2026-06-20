@@ -3,6 +3,8 @@ import type {
   CommentChannel,
   CustomerDetail,
   DashboardData,
+  SimInput,
+  SimulationResult,
   Task,
   TaskPriority,
 } from './api-types'
@@ -48,4 +50,9 @@ export const api = {
     http<Task>('/api/tasks', { method: 'POST', body: JSON.stringify(body) }),
   completeTask: (id: string) =>
     http<{ ok: true }>(`/api/tasks/${id}/complete`, { method: 'POST' }),
+  simulate: (id: string, body: SimInput) =>
+    http<SimulationResult>(`/api/customers/${id}/simulate`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 }
