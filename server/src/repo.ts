@@ -75,6 +75,8 @@ export function customerSummaries() {
       total_value: customerValue(c.id),
       pending_suggestions: pendingSuggestionCount(c.id),
       drift_status: drift.status,
+      communication_style: c.communication_style,
+      profile_description: c.profile_description,
     }
   })
 }

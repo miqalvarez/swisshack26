@@ -10,9 +10,7 @@ export function Topbar() {
   const wm = data?.wm
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-background/85 px-6 backdrop-blur">
-      <div className="eyebrow">SIX · Noumena · NTT Data — Next-Gen Wealth Advisory</div>
-
+    <header className="flex h-16 shrink-0 items-center justify-end border-b border-border bg-background/85 px-6 backdrop-blur">
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"

@@ -16,16 +16,12 @@ export function Sidebar() {
 
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
-      <div className="flex h-16 items-center gap-3 px-5">
-        <div className="flex size-8 items-center justify-center rounded-md bg-sidebar-primary font-display text-base font-semibold text-sidebar-primary-foreground">
-          W
-        </div>
-        <div className="leading-tight">
-          <div className="font-display text-sm font-semibold tracking-tight">
-            Wealth Advisory
-          </div>
-          <div className="eyebrow !text-sidebar-foreground/55">Workbench</div>
-        </div>
+      <div className="flex h-16 items-center px-5">
+        <img
+          src="/six-logo.svg"
+          alt="SIX"
+          className="h-7 w-auto"
+        />
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 px-3 py-4">
@@ -67,12 +63,6 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div className="px-5 py-4 text-sidebar-foreground/55">
-        <div className="eyebrow !text-sidebar-foreground/45">Human in the loop</div>
-        <p className="mt-1.5 text-xs leading-relaxed">
-          The WM recommends. The client always decides and places the orders.
-        </p>
-      </div>
     </aside>
   )
 }

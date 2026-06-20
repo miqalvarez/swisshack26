@@ -31,6 +31,11 @@ export type SuggestionStatus =
   | 'rejected'
   | 'executed'
   | 'expired'
+export type CommunicationStyle =
+  | 'formal-data'
+  | 'warm-personal'
+  | 'values-narrative'
+  | 'executive-brief'
 export type MandateType = 'defensive' | 'balanced' | 'growth'
 
 export interface WM {
@@ -69,6 +74,8 @@ export interface Customer {
   persona: string | null
   primary_contact: string | null
   accent_color: string | null
+  communication_style: CommunicationStyle | null
+  profile_description: string | null
   created_at: string
   updated_at: string
 }
@@ -139,6 +146,7 @@ export interface Suggestion {
   new_holding_description: string | null
   new_holding_amount: number
   new_holding_type: AssetType
+  client_message: string | null
   status: SuggestionStatus
   created_at: string
   expires_at: string | null

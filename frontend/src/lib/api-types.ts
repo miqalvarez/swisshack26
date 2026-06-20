@@ -20,6 +20,11 @@ export type TransactionType =
   | 'rebalance'
   | 'transfer'
   | 'suggestion_execution'
+export type CommunicationStyle =
+  | 'formal-data'
+  | 'warm-personal'
+  | 'values-narrative'
+  | 'executive-brief'
 export type SuggestionStatus =
   | 'draft'
   | 'pending'
@@ -46,6 +51,8 @@ export interface CustomerSummary {
   total_value: number
   pending_suggestions: number
   drift_status: DriftStatus
+  communication_style: CommunicationStyle | null
+  profile_description: string | null
 }
 
 export interface Holding {
@@ -106,6 +113,7 @@ export interface Suggestion {
   new_holding_description: string | null
   new_holding_amount: number
   new_holding_type: AssetType
+  client_message: string | null
   status: SuggestionStatus
   created_at: string
 }

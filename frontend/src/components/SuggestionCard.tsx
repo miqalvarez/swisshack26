@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, Check, ExternalLink, Newspaper, X } from 'lucide-react'
+import { ArrowRight, Check, ExternalLink, MessageSquareQuote, Newspaper, X } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -107,6 +107,16 @@ export function SuggestionCard({
             </dd>
           </div>
         </dl>
+
+        {s.client_message ? (
+          <div className="mt-3 rounded-md border border-accent/20 bg-accent/5 p-3">
+            <div className="flex items-center gap-1.5 mb-1">
+              <MessageSquareQuote className="size-3.5 text-accent" />
+              <span className="eyebrow text-accent">Message to client</span>
+            </div>
+            <p className="text-sm leading-relaxed text-foreground/90">{s.client_message}</p>
+          </div>
+        ) : null}
 
         {(apply.isError || drop.isError) && (
           <p className="mt-3 text-sm text-destructive">

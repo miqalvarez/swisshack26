@@ -1,6 +1,7 @@
 import type {
   AssetType,
   CommentChannel,
+  CommunicationStyle,
   DriftStatus,
   MandateType,
   RiskProfile,
@@ -79,6 +80,13 @@ export const txTypeLabel: Record<TransactionType, string> = {
   rebalance: 'Rebalance',
   transfer: 'Transfer',
   suggestion_execution: 'Suggestion executed',
+}
+
+export const communicationStyleLabel: Record<CommunicationStyle, string> = {
+  'formal-data': 'Formal & data-driven',
+  'warm-personal': 'Warm & personal',
+  'values-narrative': 'Values & narrative',
+  'executive-brief': 'Executive brief',
 }
 
 export const suggestionStatusLabel: Record<

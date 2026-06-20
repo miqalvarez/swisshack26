@@ -6,6 +6,7 @@ import { db, isEmpty, nowIso, uuid } from './db.js'
 import type {
   AssetType,
   CommentChannel,
+  CommunicationStyle,
   MandateType,
   RiskProfile,
 } from './types.js'
@@ -82,6 +83,8 @@ interface PersonaCfg {
   portfolioSheet: string
   crmSheet: string
   accent: string
+  communication_style: CommunicationStyle
+  profile_description: string
 }
 
 const PERSONAS: PersonaCfg[] = [
@@ -96,6 +99,9 @@ const PERSONAS: PersonaCfg[] = [
     portfolioSheet: 'Sample Portfolio Defensive',
     crmSheet: 'CRM Raeber',
     accent: '#3b6ea5',
+    communication_style: 'formal-data',
+    profile_description:
+      'Sold his precision engineering firm. Capital preservation and steady global dividends fund the family foundation. Zero appetite for US tech speculation.',
   },
   {
     id: 'schneider',
@@ -108,6 +114,9 @@ const PERSONAS: PersonaCfg[] = [
     portfolioSheet: 'Sample Portfolio Balanced',
     crmSheet: 'CRM Schneider',
     accent: '#b0573f',
+    communication_style: 'warm-personal',
+    profile_description:
+      'CEO of a Swiss automotive supply enterprise. Strong operational precision; balanced growth with a foundation supporting chronic-illness research.',
   },
   {
     id: 'huber',
@@ -120,6 +129,9 @@ const PERSONAS: PersonaCfg[] = [
     portfolioSheet: 'Sample Portfolio Defensive',
     crmSheet: 'CRM Huber',
     accent: '#3f8f6b',
+    communication_style: 'values-narrative',
+    profile_description:
+      'Sustainable agriculture exit turned into a philanthropic mission. Portfolio must reflect corporate sustainability and protect natural ecosystems.',
   },
   {
     id: 'ammann',
@@ -132,6 +144,9 @@ const PERSONAS: PersonaCfg[] = [
     portfolioSheet: 'Sample Portfolio Growth',
     crmSheet: 'CRM Ammann',
     accent: '#9a6b2f',
+    communication_style: 'executive-brief',
+    profile_description:
+      'Founder of a prominent Swiss retail brand. Highly analytical and reputation-sensitive. Strict governance screens on consumer discretionary holdings.',
   },
 ]
 
@@ -209,8 +224,8 @@ function seed() {
   }
 
   const insCustomer = db.prepare(
-    `INSERT INTO customer (id, wm_id, cio_mandate_id, full_name, photo_url, email, risk_profile, base_currency, status, persona, primary_contact, accent_color, created_at, updated_at)
-     VALUES (@id, @wm_id, @mandate_id, @full_name, NULL, @email, @risk, 'CHF', 'active', @persona, @primary_contact, @accent, @now, @now)`,
+    `INSERT INTO customer (id, wm_id, cio_mandate_id, full_name, photo_url, email, risk_profile, base_currency, status, persona, primary_contact, accent_color, communication_style, profile_description, created_at, updated_at)
+     VALUES (@id, @wm_id, @mandate_id, @full_name, NULL, @email, @risk, 'CHF', 'active', @persona, @primary_contact, @accent, @communication_style, @profile_description, @now, @now)`,
   )
   const insHolding = db.prepare(
     `INSERT INTO holding (id, customer_id, name, description, amount, asset_type, currency, is_active, isin, sector, sub_asset_class, region, target_amount, valor, mic, ticker, created_at, updated_at)
@@ -232,6 +247,8 @@ function seed() {
       persona: p.persona,
       primary_contact: p.primary_contact,
       accent: p.accent,
+      communication_style: p.communication_style,
+      profile_description: p.profile_description,
       now,
     })
 
@@ -302,11 +319,11 @@ function seedSignals(now: string) {
      VALUES (@id, @customer_id, @title, @description, @source_url, @published_at, @sentiment, @relevance, @related, @now)`,
   )
   const insSuggestion = db.prepare(
-    `INSERT INTO suggestion (id, customer_id, transaction_id, old_holding_id, news_id, news_title, news_description, news_link, news_date, potential_impact_description, exposure, recommendation_action, recommendation_description, why_title, why_description, new_holding_name, new_holding_description, new_holding_amount, new_holding_type, status, created_at, expires_at)
-     VALUES (@id, @customer_id, NULL, @old_holding_id, @news_id, @news_title, @news_description, @news_link, @news_date, @impact, @exposure, @action, @rec_desc, @why_title, @why_desc, @new_name, @new_desc, @new_amount, @new_type, 'pending', @now, NULL)`,
+    `INSERT INTO suggestion (id, customer_id, transaction_id, old_holding_id, news_id, news_title, news_description, news_link, news_date, potential_impact_description, exposure, recommendation_action, recommendation_description, why_title, why_description, new_holding_name, new_holding_description, new_holding_amount, new_holding_type, client_message, status, created_at, expires_at)
+     VALUES (@id, @customer_id, NULL, @old_holding_id, @news_id, @news_title, @news_description, @news_link, @news_date, @impact, @exposure, @action, @rec_desc, @why_title, @why_desc, @new_name, @new_desc, @new_amount, @new_type, @client_message, 'pending', @now, NULL)`,
   )
 
-  const signals = [
+const signals = [
     {
       customer: 'schneider',
       holdingLike: '%Novartis%',
@@ -319,17 +336,19 @@ function seedSignals(now: string) {
         relevance: 0.92,
       },
       impact:
-        'Direct conflict with the family’s foundation cause. Reputationally and emotionally sensitive even if financially modest.',
+        "Direct conflict with the family's foundation cause. Reputationally and emotionally sensitive even if financially modest.",
       exposure: 9.1,
       action: 'Swap within Health Care sleeve',
       recDesc:
         'Replace the position with a same-sector Swiss health-care name that still funds active research in the relevant field.',
-      whyTitle: 'Aligns the portfolio with the foundation’s mission',
+      whyTitle: "Aligns the portfolio with the foundation's mission",
       whyDesc:
-        'Keeps the Balanced mandate’s health-care weight intact while removing a holding that contradicts the client’s personal cause.',
+        "Keeps the Balanced mandate's health-care weight intact while removing a holding that contradicts the client's personal cause.",
       newName: 'Roche Holding AG',
       newDesc: 'Genussschein · Health Care · diagnostics-pharma flywheel',
       newType: 'stock' as const,
+      clientMessage:
+        "Dear Marlene, I've been following a development that touches us personally: Novartis has shut down research in the very area your foundation cares about most. To make sure your portfolio still reflects your values, I'd recommend swapping the Novartis position for Roche — a Swiss healthcare company that's still actively investing in that research field. I'd love to discuss this with you in person.",
     },
     {
       customer: 'ammann',
@@ -348,12 +367,14 @@ function seedSignals(now: string) {
       action: 'Reduce and replace exposure',
       recDesc:
         'Exit the implicated name and rotate into a same-sector consumer holding with a clean labour-rights record.',
-      whyTitle: 'Protects the client’s public reputation',
+      whyTitle: "Protects the client's public reputation",
       whyDesc:
         'Maintains consumer-staples exposure within the Growth mandate while removing the reputational liability.',
       newName: 'Chocoladefabriken Lindt',
       newDesc: 'Inhaberaktie · Consumer Staples · premium Swiss brand',
       newType: 'stock' as const,
+      clientMessage:
+        "Niklaus — labour-abuse allegations in Nestlé's supply chain pose an immediate reputational risk to your public profile. Recommendation: exit position, rotate into Lindt & Sprüngli (clean labour record, established Swiss consumer brand). Summary updated; full brief available on request.",
     },
     {
       customer: 'raeber',
@@ -367,17 +388,19 @@ function seedSignals(now: string) {
         relevance: 0.8,
       },
       impact:
-        'Conflicts with the Räbers’ stated aversion to US technology and their capital-preservation priority.',
+        "Conflicts with the Räbers' stated aversion to US technology and their capital-preservation priority.",
       exposure: 5.2,
       action: 'Decline US tech; keep Swiss quality',
       recDesc:
         'Hold the defensive Swiss position and, if rebalancing is needed, stay within Swiss quality rather than US AI names.',
-      whyTitle: 'Respects the client’s explicit no-US-tech preference',
+      whyTitle: "Respects the client's explicit no-US-tech preference",
       whyDesc:
-        'The Defensive mandate is met without breaching the client’s personal investment boundaries.',
+        "The Defensive mandate is met without breaching the client's personal investment boundaries.",
       newName: 'Swisscom AG',
       newDesc: 'Registered Shares · Telecommunication · stable Swiss dividend',
       newType: 'stock' as const,
+      clientMessage:
+        "Dear Mr. Räber, in accordance with your stated capital-preservation objective and preference against US technology exposure, I recommend retaining the current Roche position. The CIO rotation proposal toward US AI equities would exceed your defined risk and preference boundaries. Should rebalancing be required, Swisscom offers a stable dividend yield within your Defensive mandate parameters. Detailed risk analysis attached.",
     },
     {
       customer: 'huber',
@@ -385,7 +408,7 @@ function seedSignals(now: string) {
       news: {
         title: 'Consumer goods company announces historic palm-oil cut-off',
         description:
-          'A consumer-staples holding commits to fully deforestation-free palm oil, a milestone aligned with the client’s environmental values.',
+          "A consumer-staples holding commits to fully deforestation-free palm oil, a milestone aligned with the client's environmental values.",
         url: 'https://news.example.com/palm-oil-cutoff',
         sentiment: 0.6,
         relevance: 0.75,
@@ -398,10 +421,12 @@ function seedSignals(now: string) {
         'No swap required. Flag the milestone to the client as evidence the portfolio reflects their values.',
       whyTitle: 'Turns a values match into a relationship moment',
       whyDesc:
-        'Strengthens trust by proactively surfacing alignment between holdings and the client’s purpose.',
+        "Strengthens trust by proactively surfacing alignment between holdings and the client's purpose.",
       newName: 'Nestlé S.A.',
       newDesc: 'Registered Shares · Consumer Staples · sustainability milestone',
       newType: 'stock' as const,
+      clientMessage:
+        "Dear Anton, I'm pleased to share some news that truly resonates with what you stand for: Nestlé has committed to going fully deforestation-free in its palm oil sourcing — a milestone that mirrors exactly what your reforestation initiative is all about. Your portfolio already holds this shift. No action needed from our side, but I wanted you to know: your values and your portfolio are walking hand in hand.",
     },
   ]
 
@@ -441,6 +466,7 @@ function seedSignals(now: string) {
       new_desc: s.newDesc,
       new_amount: old ? amountOf(old.id) : 50000,
       new_type: s.newType,
+      client_message: s.clientMessage,
       now,
     })
   }

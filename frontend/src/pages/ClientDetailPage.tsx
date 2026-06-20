@@ -13,6 +13,7 @@ import { useCustomer } from '@/lib/queries'
 import {
   assetTypeLabel,
   channelLabel,
+  communicationStyleLabel,
   driftLabel,
   formatChf,
   formatDate,
@@ -62,11 +63,19 @@ export function ClientDetailPage() {
             {customer.persona}
             {customer.primary_contact ? ` · ${customer.primary_contact}` : ''}
           </p>
+          {customer.profile_description ? (
+            <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted-foreground/80">
+              {customer.profile_description}
+            </p>
+          ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">{mandateLabel[customer.mandate]} mandate</Badge>
           <Badge variant="outline">{riskLabel[customer.risk_profile]}</Badge>
           <Badge variant={drift.variant}>{drift.label}</Badge>
+          {customer.communication_style ? (
+            <Badge variant="outline">{communicationStyleLabel[customer.communication_style]}</Badge>
+          ) : null}
         </div>
       </div>
 

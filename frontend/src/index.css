@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wdth,wght@0,62.5..100,100..900;1,62.5..100,100..900&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
@@ -154,9 +154,9 @@
   --radius-lg: calc(var(--radius) + 4px);
   --radius-xl: calc(var(--radius) + 8px);
 
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-display: 'Bricolage Grotesque', 'Inter', sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-sans: 'Noto Sans', Helvetica, Arial, sans-serif;
+  --font-display: 'Noto Sans', Helvetica, Arial, sans-serif;
+  --font-mono: 'Noto Sans', Helvetica, Arial, sans-serif;
 }
 
 @layer base {
@@ -174,16 +174,15 @@
   }
   h1, h2, h3 {
     font-family: var(--font-display);
+    font-stretch: condensed;
   }
-  /* Tabular numerals everywhere figures appear — the instrument signature. */
+  /* Tabular numerals everywhere figures appear. */
   .tnum {
-    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     font-feature-settings: 'tnum' 1;
   }
-  /* Mono micro-labels with tracking. */
+  /* Micro-labels with tracking. */
   .eyebrow {
-    font-family: var(--font-mono);
     font-size: 0.6875rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;

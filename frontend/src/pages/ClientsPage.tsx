@@ -47,6 +47,11 @@ export function ClientsPage() {
                     <p className="truncate text-sm text-muted-foreground">
                       {c.persona}
                     </p>
+                    {c.profile_description ? (
+                      <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground/70">
+                        {c.profile_description}
+                      </p>
+                    ) : null}
                   </div>
                   <ChevronRight className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
                 </div>
