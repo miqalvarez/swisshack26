@@ -76,6 +76,8 @@ export interface Customer {
   accent_color: string | null
   communication_style: CommunicationStyle | null
   profile_description: string | null
+  technical_level: number | null
+  preferred_channel: CommentChannel | null
   created_at: string
   updated_at: string
 }
@@ -147,6 +149,8 @@ export interface Suggestion {
   new_holding_amount: number
   new_holding_type: AssetType
   client_message: string | null
+  recommended_channel: CommentChannel | null
+  delivery_approach: string | null
   status: SuggestionStatus
   created_at: string
   expires_at: string | null

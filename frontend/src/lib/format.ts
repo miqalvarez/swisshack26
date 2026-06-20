@@ -89,6 +89,16 @@ export const communicationStyleLabel: Record<CommunicationStyle, string> = {
   'executive-brief': 'Executive brief',
 }
 
+/** How technical the client wants advice to be (1 plain ↔ 5 deep detail). */
+export function technicalLevelLabel(level: number | null): string {
+  if (level == null) return 'Unknown'
+  if (level <= 1) return 'Keep it human'
+  if (level === 2) return 'Light on detail'
+  if (level === 3) return 'Balanced'
+  if (level === 4) return 'Quite technical'
+  return 'Deep technical detail'
+}
+
 export const suggestionStatusLabel: Record<
   SuggestionStatus,
   { label: string; variant: 'default' | 'secondary' | 'success' | 'destructive' }

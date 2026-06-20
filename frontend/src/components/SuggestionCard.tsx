@@ -1,12 +1,31 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, Check, ExternalLink, MessageSquareQuote, Newspaper, X } from 'lucide-react'
+import {
+  ArrowRight,
+  Check,
+  ExternalLink,
+  Mail,
+  MessageCircle,
+  MessageSquareQuote,
+  Newspaper,
+  Phone,
+  Users,
+  X,
+} from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ClientAvatar } from '@/components/ClientAvatar'
 import { useApplySuggestion, useDropSuggestion } from '@/lib/queries'
-import { formatChf, suggestionStatusLabel } from '@/lib/format'
-import type { Suggestion } from '@/lib/api-types'
+import { channelLabel, formatChf, suggestionStatusLabel } from '@/lib/format'
+import type { CommentChannel, Suggestion } from '@/lib/api-types'
+
+const channelIcon: Record<CommentChannel, typeof Phone> = {
+  call: Phone,
+  email: Mail,
+  meeting: Users,
+  whatsapp: MessageCircle,
+  other: MessageSquareQuote,
+}
 
 interface Props {
   suggestion: Suggestion
@@ -108,11 +127,34 @@ export function SuggestionCard({
           </div>
         </dl>
 
+        {/* How to deliver it — channel + approach tuned to the client's DNA */}
+        {s.recommended_channel || s.delivery_approach ? (
+          <div className="mt-3 rounded-md border border-border bg-muted/30 p-3">
+            <div className="mb-1 flex items-center gap-1.5">
+              <span className="eyebrow">How to deliver this</span>
+              {s.recommended_channel ? (
+                <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-background px-2 py-0.5 text-xs font-medium">
+                  {(() => {
+                    const Icon = channelIcon[s.recommended_channel]
+                    return <Icon className="size-3.5 text-accent" />
+                  })()}
+                  {channelLabel[s.recommended_channel]}
+                </span>
+              ) : null}
+            </div>
+            {s.delivery_approach ? (
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {s.delivery_approach}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
         {s.client_message ? (
           <div className="mt-3 rounded-md border border-accent/20 bg-accent/5 p-3">
             <div className="flex items-center gap-1.5 mb-1">
               <MessageSquareQuote className="size-3.5 text-accent" />
-              <span className="eyebrow text-accent">Message to client</span>
+              <span className="eyebrow text-accent">What to say</span>
             </div>
             <p className="text-sm leading-relaxed text-foreground/90">{s.client_message}</p>
           </div>

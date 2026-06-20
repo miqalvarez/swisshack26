@@ -10,6 +10,7 @@ import {
   customerValue,
   dropSuggestion,
   pendingSuggestionCount,
+  wealthSeries,
 } from './repo.js'
 
 ensureSeeded()
@@ -101,11 +102,17 @@ app.get('/api/customers/:id', (req, res) => {
     )
     .all(id)
 
+  const value = customerValue(id)
   res.json({
     customer,
     drift: computeDrift(id),
-    total_value: customerValue(id),
+    total_value: value,
     pending_suggestions: pendingSuggestionCount(id),
+    wealth: wealthSeries(
+      id,
+      value,
+      (customer as { risk_profile: string }).risk_profile,
+    ),
     holdings,
     transactions,
     suggestions,

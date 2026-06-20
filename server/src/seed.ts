@@ -85,6 +85,8 @@ interface PersonaCfg {
   accent: string
   communication_style: CommunicationStyle
   profile_description: string
+  technical_level: number // 1 (keep it human) .. 5 (deep technical detail)
+  preferred_channel: CommentChannel
 }
 
 const PERSONAS: PersonaCfg[] = [
@@ -102,6 +104,8 @@ const PERSONAS: PersonaCfg[] = [
     communication_style: 'formal-data',
     profile_description:
       'Sold his precision engineering firm. Capital preservation and steady global dividends fund the family foundation. Zero appetite for US tech speculation.',
+    technical_level: 5,
+    preferred_channel: 'meeting',
   },
   {
     id: 'schneider',
@@ -117,6 +121,8 @@ const PERSONAS: PersonaCfg[] = [
     communication_style: 'warm-personal',
     profile_description:
       'CEO of a Swiss automotive supply enterprise. Strong operational precision; balanced growth with a foundation supporting chronic-illness research.',
+    technical_level: 2,
+    preferred_channel: 'meeting',
   },
   {
     id: 'huber',
@@ -132,6 +138,8 @@ const PERSONAS: PersonaCfg[] = [
     communication_style: 'values-narrative',
     profile_description:
       'Sustainable agriculture exit turned into a philanthropic mission. Portfolio must reflect corporate sustainability and protect natural ecosystems.',
+    technical_level: 2,
+    preferred_channel: 'call',
   },
   {
     id: 'ammann',
@@ -147,6 +155,8 @@ const PERSONAS: PersonaCfg[] = [
     communication_style: 'executive-brief',
     profile_description:
       'Founder of a prominent Swiss retail brand. Highly analytical and reputation-sensitive. Strict governance screens on consumer discretionary holdings.',
+    technical_level: 5,
+    preferred_channel: 'email',
   },
 ]
 
@@ -224,8 +234,8 @@ function seed() {
   }
 
   const insCustomer = db.prepare(
-    `INSERT INTO customer (id, wm_id, cio_mandate_id, full_name, photo_url, email, risk_profile, base_currency, status, persona, primary_contact, accent_color, communication_style, profile_description, created_at, updated_at)
-     VALUES (@id, @wm_id, @mandate_id, @full_name, NULL, @email, @risk, 'CHF', 'active', @persona, @primary_contact, @accent, @communication_style, @profile_description, @now, @now)`,
+    `INSERT INTO customer (id, wm_id, cio_mandate_id, full_name, photo_url, email, risk_profile, base_currency, status, persona, primary_contact, accent_color, communication_style, profile_description, technical_level, preferred_channel, created_at, updated_at)
+     VALUES (@id, @wm_id, @mandate_id, @full_name, NULL, @email, @risk, 'CHF', 'active', @persona, @primary_contact, @accent, @communication_style, @profile_description, @technical_level, @preferred_channel, @now, @now)`,
   )
   const insHolding = db.prepare(
     `INSERT INTO holding (id, customer_id, name, description, amount, asset_type, currency, is_active, isin, sector, sub_asset_class, region, target_amount, valor, mic, ticker, created_at, updated_at)
@@ -249,6 +259,8 @@ function seed() {
       accent: p.accent,
       communication_style: p.communication_style,
       profile_description: p.profile_description,
+      technical_level: p.technical_level,
+      preferred_channel: p.preferred_channel,
       now,
     })
 
@@ -319,8 +331,8 @@ function seedSignals(now: string) {
      VALUES (@id, @customer_id, @title, @description, @source_url, @published_at, @sentiment, @relevance, @related, @now)`,
   )
   const insSuggestion = db.prepare(
-    `INSERT INTO suggestion (id, customer_id, transaction_id, old_holding_id, news_id, news_title, news_description, news_link, news_date, potential_impact_description, exposure, recommendation_action, recommendation_description, why_title, why_description, new_holding_name, new_holding_description, new_holding_amount, new_holding_type, client_message, status, created_at, expires_at)
-     VALUES (@id, @customer_id, NULL, @old_holding_id, @news_id, @news_title, @news_description, @news_link, @news_date, @impact, @exposure, @action, @rec_desc, @why_title, @why_desc, @new_name, @new_desc, @new_amount, @new_type, @client_message, 'pending', @now, NULL)`,
+    `INSERT INTO suggestion (id, customer_id, transaction_id, old_holding_id, news_id, news_title, news_description, news_link, news_date, potential_impact_description, exposure, recommendation_action, recommendation_description, why_title, why_description, new_holding_name, new_holding_description, new_holding_amount, new_holding_type, client_message, recommended_channel, delivery_approach, status, created_at, expires_at)
+     VALUES (@id, @customer_id, NULL, @old_holding_id, @news_id, @news_title, @news_description, @news_link, @news_date, @impact, @exposure, @action, @rec_desc, @why_title, @why_desc, @new_name, @new_desc, @new_amount, @new_type, @client_message, @rec_channel, @delivery, 'pending', @now, NULL)`,
   )
 
 const signals = [
@@ -349,6 +361,9 @@ const signals = [
       newType: 'stock' as const,
       clientMessage:
         "Dear Marlene, I've been following a development that touches us personally: Novartis has shut down research in the very area your foundation cares about most. To make sure your portfolio still reflects your values, I'd recommend swapping the Novartis position for Roche — a Swiss healthcare company that's still actively investing in that research field. I'd love to discuss this with you in person.",
+      recChannel: 'meeting' as const,
+      deliveryApproach:
+        'Raise it in person, not over email — this is emotional for Marlene. Open with the foundation, not the portfolio: acknowledge that the research she funds is at stake. Keep numbers light; frame the swap as protecting what she cares about. Let her lead the pace of the decision.',
     },
     {
       customer: 'ammann',
@@ -375,6 +390,9 @@ const signals = [
       newType: 'stock' as const,
       clientMessage:
         "Niklaus — labour-abuse allegations in Nestlé's supply chain pose an immediate reputational risk to your public profile. Recommendation: exit position, rotate into Lindt & Sprüngli (clean labour record, established Swiss consumer brand). Summary updated; full brief available on request.",
+      recChannel: 'email' as const,
+      deliveryApproach:
+        'Send a concise written brief he can forward to his own advisors — he values an audit trail. Lead with the reputational exposure and the number, then the one-line recommendation. Offer the full governance analysis as an attachment; expect a fast, decisive reply. Avoid small talk.',
     },
     {
       customer: 'raeber',
@@ -401,6 +419,9 @@ const signals = [
       newType: 'stock' as const,
       clientMessage:
         "Dear Mr. Räber, in accordance with your stated capital-preservation objective and preference against US technology exposure, I recommend retaining the current Roche position. The CIO rotation proposal toward US AI equities would exceed your defined risk and preference boundaries. Should rebalancing be required, Swisscom offers a stable dividend yield within your Defensive mandate parameters. Detailed risk analysis attached.",
+      recChannel: 'meeting' as const,
+      deliveryApproach:
+        'Book a formal review and bring the numbers. Räber is an engineer — walk him through the risk analysis, volatility figures and dividend yields, and explicitly reaffirm that you are honouring his no-US-tech boundary. Present the decision as defending his stated rules, not as a market call. Leave printed documentation.',
     },
     {
       customer: 'huber',
@@ -427,6 +448,9 @@ const signals = [
       newType: 'stock' as const,
       clientMessage:
         "Dear Anton, I'm pleased to share some news that truly resonates with what you stand for: Nestlé has committed to going fully deforestation-free in its palm oil sourcing — a milestone that mirrors exactly what your reforestation initiative is all about. Your portfolio already holds this shift. No action needed from our side, but I wanted you to know: your values and your portfolio are walking hand in hand.",
+      recChannel: 'call' as const,
+      deliveryApproach:
+        'Give him a short, warm call — no agenda, no paperwork. Tell it as a story: the company he holds just did the right thing, and it matches his mission. Make clear no action is needed; the point is to reinforce that his money reflects his values. A relationship-building moment, not a transaction.',
     },
   ]
 
@@ -467,6 +491,8 @@ const signals = [
       new_amount: old ? amountOf(old.id) : 50000,
       new_type: s.newType,
       client_message: s.clientMessage,
+      rec_channel: s.recChannel,
+      delivery: s.deliveryApproach,
       now,
     })
   }

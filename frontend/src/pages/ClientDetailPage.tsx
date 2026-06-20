@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ClientAvatar } from '@/components/ClientAvatar'
 import { HoldingsDonut } from '@/components/HoldingsDonut'
+import { WealthChart } from '@/components/WealthChart'
 import { SuggestionCard } from '@/components/SuggestionCard'
 import { AddClientData } from '@/components/AddClientData'
 import { EmptyState, ErrorState, Loading } from '@/components/PageState'
@@ -19,13 +20,14 @@ import {
   formatDate,
   mandateLabel,
   riskLabel,
+  technicalLevelLabel,
   txTypeLabel,
 } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { CustomerDetail } from '@/lib/api-types'
 
 const TABS = [
-  { id: 'holdings', label: 'Holdings' },
+  { id: 'holdings', label: 'Portfolio' },
   { id: 'suggestions', label: 'Suggestions' },
   { id: 'history', label: 'History' },
   { id: 'relationship', label: 'Relationship · DNA' },
@@ -143,6 +145,10 @@ function Kpi({ label, value }: { label: string; value: string }) {
 function HoldingsTab({ data }: { data: CustomerDetail }) {
   return (
     <div className="space-y-6">
+      <div className="rounded-lg border border-border bg-card p-6">
+        <WealthChart wealth={data.wealth} />
+      </div>
+
       <div className="rounded-lg border border-border bg-card p-6">
         <div className="eyebrow mb-4">Allocation by asset class</div>
         <HoldingsDonut holdings={data.holdings} />
@@ -281,12 +287,49 @@ function RelationshipTab({ data }: { data: CustomerDetail }) {
 
       <aside className="space-y-4 lg:col-span-2">
         <div className="rounded-lg border border-border bg-card p-5">
-          <div className="eyebrow mb-3">CIO mandate</div>
+          <div className="eyebrow mb-3">Communication DNA</div>
+          <dl className="space-y-3 text-sm">
+            {customer.communication_style ? (
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted-foreground">Style</dt>
+                <dd className="font-medium">
+                  {communicationStyleLabel[customer.communication_style]}
+                </dd>
+              </div>
+            ) : null}
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-muted-foreground">Technical depth</dt>
+              <dd className="flex items-center gap-2">
+                <DotMeter level={customer.technical_level} />
+                <span className="font-medium">
+                  {technicalLevelLabel(customer.technical_level)}
+                </span>
+              </dd>
+            </div>
+            {customer.preferred_channel ? (
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted-foreground">Preferred channel</dt>
+                <dd className="font-medium">{channelLabel[customer.preferred_channel]}</dd>
+              </div>
+            ) : null}
+          </dl>
+          <p className="mt-3 border-t border-border pt-3 text-xs text-muted-foreground">
+            Suggestions and draft messages are tuned to this profile — see the
+            “How to deliver this” note on each suggestion.
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-border bg-card p-5">
+          <div className="eyebrow mb-3">Investment strategy</div>
           <div className="font-display text-base font-semibold">
             {mandateLabel[customer.mandate]}
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
             {customer.mandate_description}
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground/80">
+            The bank-wide model strategy (set by the CIO) this client is invested
+            under. It defines the allowed allocation, universe and rules below.
           </p>
           <dl className="mt-4 space-y-3 text-sm">
             <Field label="Investment universe" value={customer.investment_universe} />
@@ -306,5 +349,19 @@ function Field({ label, value }: { label: string; value: string | null }) {
       <dt className="eyebrow">{label}</dt>
       <dd className="mt-0.5 text-muted-foreground">{value}</dd>
     </div>
+  )
+}
+
+function DotMeter({ level }: { level: number | null }) {
+  const n = level ?? 0
+  return (
+    <span className="flex items-center gap-0.5" aria-hidden>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <span
+          key={i}
+          className={cn('size-1.5 rounded-full', i <= n ? 'bg-primary' : 'bg-border')}
+        />
+      ))}
+    </span>
   )
 }

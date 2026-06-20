@@ -114,6 +114,8 @@ export interface Suggestion {
   new_holding_amount: number
   new_holding_type: AssetType
   client_message: string | null
+  recommended_channel: CommentChannel | null
+  delivery_approach: string | null
   status: SuggestionStatus
   created_at: string
 }
@@ -158,6 +160,13 @@ export interface DashboardData {
   })[]
 }
 
+export interface WealthSeries {
+  history: { date: string; value: number }[]
+  forecast: { date: string; expected: number; low: number; high: number }[]
+  cagr: number
+  projectedValue: number
+}
+
 export interface CustomerDetail {
   customer: CustomerSummary & {
     mandate: MandateType
@@ -167,10 +176,13 @@ export interface CustomerDetail {
     risk_limits: string | null
     primary_contact: string | null
     email: string | null
+    technical_level: number | null
+    preferred_channel: CommentChannel | null
   }
   drift: DriftInfo
   total_value: number
   pending_suggestions: number
+  wealth: WealthSeries
   holdings: Holding[]
   transactions: Transaction[]
   suggestions: Suggestion[]

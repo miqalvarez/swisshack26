@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS customer (
   accent_color        TEXT,
   communication_style TEXT CHECK (communication_style IN ('formal-data','warm-personal','values-narrative','executive-brief')),
   profile_description TEXT,
+  technical_level     INTEGER,
+  preferred_channel   TEXT CHECK (preferred_channel IN ('call','email','meeting','whatsapp','other')),
   created_at          TEXT NOT NULL,
   updated_at          TEXT NOT NULL
 );
@@ -125,6 +127,8 @@ CREATE TABLE IF NOT EXISTS suggestion (
   new_holding_amount           REAL NOT NULL,
   new_holding_type             TEXT NOT NULL CHECK (new_holding_type IN ('property','cash','stock','crypto','bond','fund','other')),
   client_message              TEXT,
+  recommended_channel          TEXT CHECK (recommended_channel IN ('call','email','meeting','whatsapp','other')),
+  delivery_approach            TEXT,
   status                       TEXT NOT NULL CHECK (status IN ('draft','pending','accepted','rejected','executed','expired')),
   created_at                   TEXT NOT NULL,
   expires_at                   TEXT

@@ -44,6 +44,104 @@ export function customerValue(customerId: string): number {
   return row.v
 }
 
+// --- Wealth evolution + forecast -------------------------------------------
+
+function mulberry32(seed: number) {
+  return function () {
+    seed |= 0
+    seed = (seed + 0x6d2b79f5) | 0
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+function hashString(s: string): number {
+  let h = 2166136261
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return h >>> 0
+}
+
+export interface WealthSeries {
+  history: { date: string; value: number }[]
+  forecast: { date: string; expected: number; low: number; high: number }[]
+  cagr: number // historical, annualised
+  projectedValue: number // expected value at the forecast horizon
+}
+
+/**
+ * Deterministic, semi-synthetic net-worth track for the demo: 36 months of
+ * history ending exactly at the client's current value, plus a 12-month forecast
+ * with a widening expected/low/high band. Volatility and drift scale with the
+ * client's risk profile. Seeded by the customer id so it's stable across calls.
+ */
+export function wealthSeries(
+  customerId: string,
+  current: number,
+  risk: string,
+): WealthSeries {
+  const rng = mulberry32(hashString(customerId))
+  const driftByRisk: Record<string, number> = {
+    conservative: 0.0035,
+    balanced: 0.0058,
+    aggressive: 0.009,
+  }
+  const volByRisk: Record<string, number> = {
+    conservative: 0.012,
+    balanced: 0.024,
+    aggressive: 0.04,
+  }
+  const drift = driftByRisk[risk] ?? 0.005
+  const vol = volByRisk[risk] ?? 0.02
+
+  const months = 36
+  // Forward growth factors, then scaled so the final point equals `current`.
+  const factors: number[] = [1]
+  for (let i = 0; i < months; i++) {
+    const r = drift + (rng() * 2 - 1) * vol
+    factors.push(factors[factors.length - 1] * (1 + r))
+  }
+  const scale = current / factors[factors.length - 1]
+
+  const startOfMonth = (offset: number) => {
+    const d = new Date()
+    d.setDate(1)
+    d.setMonth(d.getMonth() + offset)
+    return d.toISOString().slice(0, 10)
+  }
+
+  const history = factors.map((f, i) => ({
+    date: startOfMonth(i - months),
+    value: Math.round(f * scale),
+  }))
+
+  // 12-month forecast from `current`, band widening with horizon.
+  const fMonths = 12
+  const forecast: WealthSeries['forecast'] = []
+  let expected = current
+  for (let i = 1; i <= fMonths; i++) {
+    expected = expected * (1 + drift)
+    const spread = vol * Math.sqrt(i) * 1.1
+    forecast.push({
+      date: startOfMonth(i),
+      expected: Math.round(expected),
+      low: Math.round(expected * (1 - spread)),
+      high: Math.round(expected * (1 + spread)),
+    })
+  }
+
+  const cagr = (Math.pow(1 + drift, 12) - 1) * 100
+  return {
+    history,
+    forecast,
+    cagr: Number(cagr.toFixed(1)),
+    projectedValue: forecast[forecast.length - 1].expected,
+  }
+}
+
 export function pendingSuggestionCount(customerId: string): number {
   const row = db
     .prepare(
