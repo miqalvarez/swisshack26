@@ -1,9 +1,9 @@
 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
   <rect width="100" height="100" rx="22" fill="#e11d2b" />
-  <g transform="translate(50 49) scale(0.84) translate(-50 -49)">
-    <g stroke="#ffffff" stroke-width="4.4" fill="none" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M50 28 L60 66 L50 90 L40 66 Z" />
-      <path d="M50 29 L50 90" />
+  <g transform="translate(50 50) scale(0.92) translate(-50 -41)">
+    <g stroke="#ffffff" stroke-width="4.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M50 30 L63 76 L50 65 L37 76 Z" />
+      <path d="M50 31 L50 65" />
     </g>
     <path d="M50 6 L51.7 12.3 L58 14 L51.7 15.7 L50 22 L48.3 15.7 L42 14 L48.3 12.3 Z" fill="#ffffff" />
   </g>

@@ -12,16 +12,16 @@ export function PolarisMark({ className }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      {/* compass needle pointing up to the star */}
+      {/* arrowhead pointing up to the star */}
       <path
-        d="M50 28 L60 66 L50 90 L40 66 Z"
+        d="M50 30 L63 76 L50 65 L37 76 Z"
         stroke="currentColor"
         strokeWidth={3.2}
         strokeLinejoin="round"
       />
       {/* centre ridge */}
       <path
-        d="M50 29 L50 90"
+        d="M50 31 L50 65"
         stroke="currentColor"
         strokeWidth={3.2}
         strokeLinecap="round"
