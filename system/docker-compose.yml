@@ -1,0 +1,29 @@
+# Docker Compose for Microsoft GraphRAG local instance.
+# Spin up with: docker compose up -d
+#
+# GraphRAG builds a knowledge graph from ingested documents
+# (news articles, market reports) and exposes a search API
+# that the advisory agents query for semantic context.
+
+services:
+  graphrag-indexer:
+    image: mcr.microsoft.com/graphrag/indexer:latest
+    volumes:
+      - ./graphrag/data:/data
+      - ./graphrag/settings.yaml:/app/settings.yaml
+    environment:
+      - GRAPHRAG_API_KEY=${LLM_API_KEY}
+      - GRAPHRAG_API_BASE=${LLM_API_BASE}
+      - GRAPHRAG_MODEL=${LLM_MODEL_NAME}
+    command: index --root /data --config /app/settings.yaml
+
+  graphrag-api:
+    image: mcr.microsoft.com/graphrag/api:latest
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./graphrag/data:/data
+    environment:
+      - GRAPHRAG_DATA_ROOT=/data
+    depends_on:
+      - graphrag-indexer

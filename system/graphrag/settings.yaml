@@ -1,0 +1,43 @@
+# Microsoft GraphRAG settings for indexing news data.
+# See: https://microsoft.github.io/graphrag/
+
+llm:
+  api_key: ${GRAPHRAG_API_KEY}
+  api_base: ${GRAPHRAG_API_BASE}
+  model: ${GRAPHRAG_MODEL:-gpt-4o}
+  model_supports_json: true
+
+embeddings:
+  api_key: ${GRAPHRAG_API_KEY}
+  api_base: ${GRAPHRAG_API_BASE}
+  model: text-embedding-3-small
+
+input:
+  type: file
+  file_type: csv
+  base_dir: ${GRAPHRAG_DATA_ROOT}/input
+
+chunks:
+  size: 1200
+  overlap: 100
+
+entity_extraction:
+  max_gleanings: 1
+
+claim_extraction:
+  enabled: false
+
+community_reports:
+  max_length: 2000
+  max_input_length: 8000
+
+summarize_descriptions:
+  max_length: 500
+
+cache:
+  type: file
+  base_dir: ${GRAPHRAG_DATA_ROOT}/cache
+
+output:
+  type: file
+  base_dir: ${GRAPHRAG_DATA_ROOT}/output
