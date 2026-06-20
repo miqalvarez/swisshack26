@@ -1,8 +1,9 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, Inbox, Star } from 'lucide-react'
+import { LayoutDashboard, Users, Inbox } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { useDashboard } from '@/lib/queries'
+import { PolarisMark } from '@/components/PolarisMark'
 
 export function Sidebar() {
   const { data } = useDashboard()
@@ -17,9 +18,7 @@ export function Sidebar() {
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
       <div className="flex h-16 items-center gap-2.5 px-5">
-        <span className="flex size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-          <Star className="size-4" fill="currentColor" strokeWidth={0} />
-        </span>
+        <PolarisMark className="size-9 text-sidebar-primary" />
         <div className="leading-tight">
           <div className="font-display text-base font-semibold tracking-tight">
             Polaris
