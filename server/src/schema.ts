@@ -44,6 +44,9 @@ CREATE TABLE IF NOT EXISTS customer (
   profile_description TEXT,
   technical_level     INTEGER,
   preferred_channel   TEXT CHECK (preferred_channel IN ('call','email','meeting','whatsapp','other')),
+  investment_goal     TEXT,
+  time_horizon_years  INTEGER,
+  next_review_date    TEXT,
   created_at          TEXT NOT NULL,
   updated_at          TEXT NOT NULL
 );
@@ -134,6 +137,23 @@ CREATE TABLE IF NOT EXISTS suggestion (
   expires_at                   TEXT
 );
 
+CREATE TABLE IF NOT EXISTS task (
+  id            TEXT PRIMARY KEY,
+  wm_id         TEXT NOT NULL REFERENCES wm(id),
+  customer_id   TEXT REFERENCES customer(id) ON DELETE CASCADE,
+  suggestion_id TEXT REFERENCES suggestion(id) ON DELETE SET NULL,
+  title         TEXT NOT NULL,
+  description   TEXT,
+  channel       TEXT CHECK (channel IN ('call','email','meeting','whatsapp','other')),
+  due_date      TEXT NOT NULL,
+  status        TEXT NOT NULL CHECK (status IN ('open','done')) DEFAULT 'open',
+  priority      TEXT NOT NULL CHECK (priority IN ('low','medium','high')) DEFAULT 'medium',
+  created_at    TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_task_wm           ON task(wm_id);
+CREATE INDEX IF NOT EXISTS idx_task_customer     ON task(customer_id);
+CREATE INDEX IF NOT EXISTS idx_task_due          ON task(due_date);
 CREATE INDEX IF NOT EXISTS idx_customer_wm        ON customer(wm_id);
 CREATE INDEX IF NOT EXISTS idx_holding_customer   ON holding(customer_id);
 CREATE INDEX IF NOT EXISTS idx_comment_customer   ON comment(customer_id);

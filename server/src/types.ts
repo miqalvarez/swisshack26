@@ -78,8 +78,28 @@ export interface Customer {
   profile_description: string | null
   technical_level: number | null
   preferred_channel: CommentChannel | null
+  investment_goal: string | null
+  time_horizon_years: number | null
+  next_review_date: string | null
   created_at: string
   updated_at: string
+}
+
+export type TaskStatus = 'open' | 'done'
+export type TaskPriority = 'low' | 'medium' | 'high'
+
+export interface Task {
+  id: string
+  wm_id: string
+  customer_id: string | null
+  suggestion_id: string | null
+  title: string
+  description: string | null
+  channel: CommentChannel | null
+  due_date: string
+  status: TaskStatus
+  priority: TaskPriority
+  created_at: string
 }
 
 export interface Comment {

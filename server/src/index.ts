@@ -6,10 +6,14 @@ import { ensureSeeded } from './seed.js'
 import {
   applySuggestion,
   computeDrift,
+  createTask,
   customerSummaries,
   customerValue,
   dropSuggestion,
+  lastInteraction,
+  listTasks,
   pendingSuggestionCount,
+  setTaskStatus,
   wealthSeries,
 } from './repo.js'
 
@@ -46,16 +50,20 @@ app.get('/api/dashboard', (_req, res) => {
     )
     .all()
 
+  const tasks = listTasks({ status: 'open' })
+
   res.json({
     wm: WM(),
     stats: {
       clients: customers.length,
       pending_suggestions: suggestions.length,
       assets_under_advice: customers.reduce((s, c) => s + c.total_value, 0),
+      open_tasks: tasks.length,
     },
     customers,
     news,
     suggestions,
+    tasks,
   })
 })
 
@@ -113,10 +121,12 @@ app.get('/api/customers/:id', (req, res) => {
       value,
       (customer as { risk_profile: string }).risk_profile,
     ),
+    last_interaction: lastInteraction(id),
     holdings,
     transactions,
     suggestions,
     comments,
+    tasks: listTasks({ customerId: id }),
   })
 })
 
@@ -175,6 +185,49 @@ app.post('/api/suggestions/:id/drop', (req, res) => {
     res.json({ ok: true })
   } catch (err) {
     res.status(409).json({ error: (err as Error).message })
+  }
+})
+
+// --- Tasks / follow-ups ---
+app.get('/api/tasks', (req, res) => {
+  const status = typeof req.query.status === 'string' ? req.query.status : undefined
+  const customerId =
+    typeof req.query.customer_id === 'string' ? req.query.customer_id : undefined
+  res.json(listTasks({ status, customerId }))
+})
+
+const taskSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().optional(),
+  customer_id: z.string().optional(),
+  suggestion_id: z.string().optional(),
+  channel: z.enum(['call', 'email', 'meeting', 'whatsapp', 'other']).optional(),
+  due_date: z.string().min(4),
+  priority: z.enum(['low', 'medium', 'high']).optional(),
+})
+
+app.post('/api/tasks', (req, res) => {
+  const parsed = taskSchema.safeParse(req.body)
+  if (!parsed.success)
+    return res.status(400).json({ error: 'invalid_body', details: parsed.error.flatten() })
+  res.status(201).json(createTask(parsed.data))
+})
+
+app.post('/api/tasks/:id/complete', (req, res) => {
+  try {
+    setTaskStatus(req.params.id, 'done')
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(404).json({ error: (err as Error).message })
+  }
+})
+
+app.post('/api/tasks/:id/reopen', (req, res) => {
+  try {
+    setTaskStatus(req.params.id, 'open')
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(404).json({ error: (err as Error).message })
   }
 })
 

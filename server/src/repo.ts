@@ -68,7 +68,9 @@ function hashString(s: string): number {
 export interface WealthSeries {
   history: { date: string; value: number }[]
   forecast: { date: string; expected: number; low: number; high: number }[]
+  benchmark: { date: string; value: number }[] // same start, market path
   cagr: number // historical, annualised
+  benchmarkCagr: number
   projectedValue: number // expected value at the forecast horizon
 }
 
@@ -118,6 +120,23 @@ export function wealthSeries(
     value: Math.round(f * scale),
   }))
 
+  // Benchmark: a shared market path (same seed for every client) starting from
+  // the same initial wealth, so out/under-performance is comparable.
+  const benchRng = mulberry32(hashString('market-benchmark'))
+  const benchDrift = 0.0045
+  const benchVol = 0.02
+  const startValue = history[0].value
+  const benchFactors: number[] = [1]
+  for (let i = 0; i < months; i++) {
+    const r = benchDrift + (benchRng() * 2 - 1) * benchVol
+    benchFactors.push(benchFactors[benchFactors.length - 1] * (1 + r))
+  }
+  const benchmark = benchFactors.map((f, i) => ({
+    date: startOfMonth(i - months),
+    value: Math.round(f * startValue),
+  }))
+  const benchmarkCagr = (Math.pow(1 + benchDrift, 12) - 1) * 100
+
   // 12-month forecast from `current`, band widening with horizon.
   const fMonths = 12
   const forecast: WealthSeries['forecast'] = []
@@ -137,7 +156,9 @@ export function wealthSeries(
   return {
     history,
     forecast,
+    benchmark,
     cagr: Number(cagr.toFixed(1)),
+    benchmarkCagr: Number(benchmarkCagr.toFixed(1)),
     projectedValue: forecast[forecast.length - 1].expected,
   }
 }
@@ -252,4 +273,75 @@ export function dropSuggestion(suggestionId: string) {
     )
     .run(suggestionId)
   if (info.changes === 0) throw new Error('not_found_or_not_pending')
+}
+
+// --- Tasks / follow-ups -----------------------------------------------------
+
+/** Open tasks (optionally for one customer) joined with the client name. */
+export function listTasks(opts: { customerId?: string; status?: string } = {}) {
+  const where: string[] = []
+  const params: Record<string, string> = {}
+  if (opts.customerId) {
+    where.push('t.customer_id = @customerId')
+    params.customerId = opts.customerId
+  }
+  if (opts.status) {
+    where.push('t.status = @status')
+    params.status = opts.status
+  }
+  const clause = where.length ? `WHERE ${where.join(' AND ')}` : ''
+  return db
+    .prepare(
+      `SELECT t.*, c.full_name AS customer_name, c.accent_color
+       FROM task t LEFT JOIN customer c ON c.id = t.customer_id
+       ${clause}
+       ORDER BY (t.status = 'open') DESC, t.due_date ASC`,
+    )
+    .all(params)
+}
+
+export function createTask(input: {
+  customer_id?: string | null
+  suggestion_id?: string | null
+  title: string
+  description?: string | null
+  channel?: string | null
+  due_date: string
+  priority?: string
+}) {
+  const id = uuid()
+  const wm = db.prepare(`SELECT id FROM wm LIMIT 1`).get() as { id: string }
+  db.prepare(
+    `INSERT INTO task (id, wm_id, customer_id, suggestion_id, title, description, channel, due_date, status, priority, created_at)
+     VALUES (@id, @wm_id, @customer_id, @suggestion_id, @title, @description, @channel, @due_date, 'open', @priority, @now)`,
+  ).run({
+    id,
+    wm_id: wm.id,
+    customer_id: input.customer_id ?? null,
+    suggestion_id: input.suggestion_id ?? null,
+    title: input.title,
+    description: input.description ?? null,
+    channel: input.channel ?? null,
+    due_date: input.due_date,
+    priority: input.priority ?? 'medium',
+    now: nowIso(),
+  })
+  return db.prepare(`SELECT * FROM task WHERE id = ?`).get(id)
+}
+
+export function setTaskStatus(taskId: string, status: 'open' | 'done') {
+  const info = db
+    .prepare(`UPDATE task SET status = ? WHERE id = ?`)
+    .run(status, taskId)
+  if (info.changes === 0) throw new Error('not_found')
+}
+
+/** Most recent relationship-log date for a client (the "last interaction"). */
+export function lastInteraction(customerId: string): string | null {
+  const row = db
+    .prepare(
+      `SELECT MAX(comment_date) AS d FROM comment WHERE customer_id = ?`,
+    )
+    .get(customerId) as { d: string | null }
+  return row.d ?? null
 }

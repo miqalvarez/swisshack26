@@ -60,6 +60,14 @@ function sheetRows(wb: XLSX.WorkBook, name: string): Row[] {
   return XLSX.utils.sheet_to_json<Row>(ws, { defval: null })
 }
 
+/** ISO (date only) N days from now; negative = in the past. */
+function daysFromNow(days: number): string {
+  const d = new Date()
+  d.setHours(12, 0, 0, 0)
+  d.setDate(d.getDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
 function str(v: unknown): string {
   return v == null ? '' : String(v).trim()
 }
@@ -87,6 +95,9 @@ interface PersonaCfg {
   profile_description: string
   technical_level: number // 1 (keep it human) .. 5 (deep technical detail)
   preferred_channel: CommentChannel
+  investment_goal: string
+  time_horizon_years: number
+  next_review_in_days: number
 }
 
 const PERSONAS: PersonaCfg[] = [
@@ -106,6 +117,9 @@ const PERSONAS: PersonaCfg[] = [
       'Sold his precision engineering firm. Capital preservation and steady global dividends fund the family foundation. Zero appetite for US tech speculation.',
     technical_level: 5,
     preferred_channel: 'meeting',
+    investment_goal: 'Preserve capital and fund the family foundation in perpetuity',
+    time_horizon_years: 15,
+    next_review_in_days: 4,
   },
   {
     id: 'schneider',
@@ -123,6 +137,9 @@ const PERSONAS: PersonaCfg[] = [
       'CEO of a Swiss automotive supply enterprise. Strong operational precision; balanced growth with a foundation supporting chronic-illness research.',
     technical_level: 2,
     preferred_channel: 'meeting',
+    investment_goal: 'Balanced growth while supporting chronic-illness research',
+    time_horizon_years: 12,
+    next_review_in_days: 1,
   },
   {
     id: 'huber',
@@ -140,6 +157,9 @@ const PERSONAS: PersonaCfg[] = [
       'Sustainable agriculture exit turned into a philanthropic mission. Portfolio must reflect corporate sustainability and protect natural ecosystems.',
     technical_level: 2,
     preferred_channel: 'call',
+    investment_goal: 'Grow philanthropic capital with a strict sustainability screen',
+    time_horizon_years: 20,
+    next_review_in_days: 9,
   },
   {
     id: 'ammann',
@@ -157,6 +177,9 @@ const PERSONAS: PersonaCfg[] = [
       'Founder of a prominent Swiss retail brand. Highly analytical and reputation-sensitive. Strict governance screens on consumer discretionary holdings.',
     technical_level: 5,
     preferred_channel: 'email',
+    investment_goal: 'Maximise long-term growth without reputational exposure',
+    time_horizon_years: 18,
+    next_review_in_days: 2,
   },
 ]
 
@@ -188,6 +211,7 @@ const MANDATES: Record<
 
 function reset() {
   for (const t of [
+    'task',
     'suggestion',
     'news',
     '"transaction"',
@@ -234,8 +258,8 @@ function seed() {
   }
 
   const insCustomer = db.prepare(
-    `INSERT INTO customer (id, wm_id, cio_mandate_id, full_name, photo_url, email, risk_profile, base_currency, status, persona, primary_contact, accent_color, communication_style, profile_description, technical_level, preferred_channel, created_at, updated_at)
-     VALUES (@id, @wm_id, @mandate_id, @full_name, NULL, @email, @risk, 'CHF', 'active', @persona, @primary_contact, @accent, @communication_style, @profile_description, @technical_level, @preferred_channel, @now, @now)`,
+    `INSERT INTO customer (id, wm_id, cio_mandate_id, full_name, photo_url, email, risk_profile, base_currency, status, persona, primary_contact, accent_color, communication_style, profile_description, technical_level, preferred_channel, investment_goal, time_horizon_years, next_review_date, created_at, updated_at)
+     VALUES (@id, @wm_id, @mandate_id, @full_name, NULL, @email, @risk, 'CHF', 'active', @persona, @primary_contact, @accent, @communication_style, @profile_description, @technical_level, @preferred_channel, @investment_goal, @time_horizon_years, @next_review_date, @now, @now)`,
   )
   const insHolding = db.prepare(
     `INSERT INTO holding (id, customer_id, name, description, amount, asset_type, currency, is_active, isin, sector, sub_asset_class, region, target_amount, valor, mic, ticker, created_at, updated_at)
@@ -261,6 +285,9 @@ function seed() {
       profile_description: p.profile_description,
       technical_level: p.technical_level,
       preferred_channel: p.preferred_channel,
+      investment_goal: p.investment_goal,
+      time_horizon_years: p.time_horizon_years,
+      next_review_date: daysFromNow(p.next_review_in_days),
       now,
     })
 
@@ -313,7 +340,37 @@ function seed() {
   }
 
   seedSignals(now)
+  seedTasks(now)
   console.log('Seed complete.')
+}
+
+/** A handful of upcoming follow-ups so the dashboard calendar has content. */
+function seedTasks(now: string) {
+  const ins = db.prepare(
+    `INSERT INTO task (id, wm_id, customer_id, suggestion_id, title, description, channel, due_date, status, priority, created_at)
+     VALUES (@id, @wm_id, @customer_id, NULL, @title, @description, @channel, @due_date, 'open', @priority, @now)`,
+  )
+  const tasks = [
+    { customer_id: 'schneider', title: 'Call Marlene about the Novartis swap', description: 'Walk her through the foundation angle before proposing the Roche swap.', channel: 'meeting' as const, due: 1, priority: 'high' as const },
+    { customer_id: 'ammann', title: 'Send Niklaus the governance brief', description: 'Reputational exposure on the consumer holding — concise written brief.', channel: 'email' as const, due: 2, priority: 'high' as const },
+    { customer_id: 'raeber', title: 'Quarterly portfolio review', description: 'Reaffirm the no-US-tech boundary; bring the risk analysis.', channel: 'meeting' as const, due: 4, priority: 'medium' as const },
+    { customer_id: 'huber', title: 'Share the palm-oil milestone', description: 'Warm call — values alignment, no action needed.', channel: 'call' as const, due: 6, priority: 'low' as const },
+    { customer_id: null, title: 'Prepare monthly book review', description: 'Aggregate drift and AUM across the book for the team sync.', channel: null, due: 3, priority: 'medium' as const },
+    { customer_id: 'schneider', title: 'Birthday note to the Schneiders', description: null, channel: 'email' as const, due: 8, priority: 'low' as const },
+  ]
+  for (const t of tasks) {
+    ins.run({
+      id: uuid(),
+      wm_id: WM_ID,
+      customer_id: t.customer_id,
+      title: t.title,
+      description: t.description,
+      channel: t.channel,
+      due_date: daysFromNow(t.due),
+      priority: t.priority,
+      now,
+    })
+  }
 }
 
 /**
