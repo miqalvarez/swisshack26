@@ -1,7 +1,7 @@
 /**
- * The Polaris mark — north star + compass needle + horizon arc — recreated as
- * clean vector line-art. Uses currentColor so it can be tinted (SIX red, white,
- * ink) via the surrounding text color.
+ * The Polaris mark — a compass needle pointing up to the north star — as clean
+ * vector line-art. Uses currentColor so it can be tinted (SIX red, white, ink)
+ * via the surrounding text color.
  */
 export function PolarisMark({ className }: { className?: string }) {
   return (
@@ -12,24 +12,16 @@ export function PolarisMark({ className }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      {/* horizon arc / wings */}
+      {/* compass needle pointing up to the star */}
       <path
-        d="M19 69 C22 46 36 43 50 43 C64 43 78 46 81 69"
-        stroke="currentColor"
-        strokeWidth={3.2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* compass needle / blade */}
-      <path
-        d="M50 26 L59 62 L50 85 L41 62 Z"
+        d="M50 28 L60 66 L50 90 L40 66 Z"
         stroke="currentColor"
         strokeWidth={3.2}
         strokeLinejoin="round"
       />
       {/* centre ridge */}
       <path
-        d="M50 27 L50 84"
+        d="M50 29 L50 90"
         stroke="currentColor"
         strokeWidth={3.2}
         strokeLinecap="round"
