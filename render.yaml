@@ -1,0 +1,13 @@
+# One-click deploy on Render (https://render.com): New → Blueprint → point at
+# this repo. Builds the Docker image (frontend + server, single origin) and
+# gives a stable public https URL for the live demo.
+services:
+  - type: web
+    name: polaris-demo
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: "8080"

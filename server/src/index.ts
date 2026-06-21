@@ -1,6 +1,9 @@
 import express from 'express'
 import cors from 'cors'
 import { z } from 'zod'
+import { fileURLToPath } from 'node:url'
+import { dirname, resolve } from 'node:path'
+import { existsSync } from 'node:fs'
 import { db } from './db.js'
 import { ensureSeeded } from './seed.js'
 import {
@@ -257,7 +260,19 @@ app.post('/api/tasks/:id/reopen', (req, res) => {
   }
 })
 
+// Serve the built frontend (single-origin deploy). The SPA calls relative
+// `/api/*`, so hosting both here means one URL for the whole demo.
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const DIST_DIR = resolve(__dirname, '../../frontend/dist')
+if (existsSync(DIST_DIR)) {
+  app.use(express.static(DIST_DIR))
+  app.get(/^(?!\/api\/).*/, (_req, res) => {
+    res.sendFile(resolve(DIST_DIR, 'index.html'))
+  })
+}
+
 const PORT = Number(process.env.PORT ?? 4000)
-app.listen(PORT, () => {
-  console.log(`Wealth Advisory API listening on http://localhost:${PORT}`)
+const HOST = process.env.HOST ?? '0.0.0.0'
+app.listen(PORT, HOST, () => {
+  console.log(`Wealth Advisory API listening on http://${HOST}:${PORT}`)
 })
