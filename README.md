@@ -1,33 +1,72 @@
-# Polaris by SIX — Next-Gen Wealth Advisory Workbench
+<div align="center">
 
-**Polaris** is a wealth-manager (**WM**) workbench for the SIX · Noumena · NTT Data
-challenge *"The Next Generation of Wealth Advisory"* — the guiding star for the
-advisor. The WM sees what changed for each client, understands why
-(news → analysis → advice → action), and acts — while the client always decides.
+<img src="frontend/public/brand/polaris-lockup-red.png" alt="Polaris — A SIX Software" width="540" />
 
-This repo holds two apps:
+### The Next Generation of Wealth Advisory
 
-| Folder | What it is |
-|---|---|
-| `frontend/` | React + Vite + TypeScript SPA (the dashboard) |
-| `server/` | Express + SQLite backend implementing the UML entities + WM use cases |
-| `data/` | The challenge workbooks (CRM + portfolio) the backend seeds from |
+*The guiding star for the wealth manager.*
 
-> The backend here is a **real, working** reference (real persistence, real
-> apply/drop mutations) seeded from the provided `.xlsx`. The agent-driven
-> inference (news + suggestions) is currently seeded; it's where the parallel
-> multi-agent system will plug in.
+</div>
 
 ---
 
-## Prerequisites
+**Polaris** is a wealth-manager (**WM**) workbench for the **SIX · Noumena · NTT Data**
+challenge *"The Next Generation of Wealth Advisory."* It turns the firehose of market
+news into a focused, per-client action queue: the WM sees what changed for each client,
+understands **why** (news → analysis → advice → action), and acts in one click — while
+the client always decides.
 
-- **Node 22.12+** and npm. (Check with `node -v`. If you use nvm: `nvm use` —
-  `.nvmrc` pins 22.12.0 in `frontend/`.)
+Three apps work together as one product:
 
-## Run it (two terminals)
+| Folder | What it is |
+|---|---|
+| `frontend/` | React + Vite + TypeScript SPA — the WM dashboard |
+| `server/` | Express + SQLite backend — the UML entities + WM use cases, with real persistence |
+| `system/` | LangGraph multi-agent system — the inference that produces news, analysis and suggestions |
 
-**1. Backend** — seeds the SQLite DB from `data/*.xlsx` on first boot:
+The full loop is live and integrated: the agent graph reasons over each client's DNA,
+the CIO mandate and live news, writes suggestions into the workbench, and the WM applies
+or rejects them from the dashboard — every decision flowing back to evaluate plan quality.
+
+---
+
+## Architecture
+
+```
+        data/*.xlsx ──seed──▶  SQLite (server/data/workbench.db)
+                                     │
+   ┌───────────────────────┐        │  REST  /api/*
+   │  system/ (LangGraph)   │◀──────▶│
+   │  multi-agent inference │   Express API (server, :4000)
+   │  • client DNA          │        │
+   │  • CIO plan            │        │  /api/*  (Vite proxy)
+   │  • news (GraphRAG)     │        ▼
+   │  • create / explain    │   React SPA (frontend, :5173)
+   │  • evaluate plan       │        │
+   └───────────────────────┘        ▼
+                                 Wealth Manager
+                              (applies / rejects)
+```
+
+- **Frontend → API:** `frontend/src/lib/api.ts` (fetch) + `lib/queries.ts` (react-query).
+  Mutations invalidate `dashboard`/`customer` queries so the UI refetches automatically.
+- **API → DB:** `server/src/index.ts` (routes), `server/src/repo.ts` (drift + apply/drop),
+  `server/src/schema.ts` (DDL), `server/src/seed.ts` (xlsx → rows).
+- **System → API:** the LangGraph agents read client/portfolio/CIO data from the workbench
+  API, retrieve news through GraphRAG, and write back suggestions and tailored client
+  messages. See `system/README.md` for the agent graph.
+
+---
+
+## Run it
+
+### Prerequisites
+
+- **Node 22.12+** and npm (`.nvmrc` pins 22.12.0 in `frontend/`)
+- **Python 3.11+** (for the advisory system)
+- **Docker** (for GraphRAG)
+
+### 1. Backend — seeds the SQLite DB from `data/*.xlsx` on first boot
 
 ```bash
 cd server
@@ -35,7 +74,7 @@ npm install
 npm run dev            # http://localhost:4000
 ```
 
-**2. Frontend** — Vite dev server, proxies `/api` → `http://localhost:4000`:
+### 2. Frontend — Vite dev server, proxies `/api` → `http://localhost:4000`
 
 ```bash
 cd frontend
@@ -45,32 +84,28 @@ npm run dev            # http://localhost:5173
 
 Open **http://localhost:5173**.
 
+### 3. Advisory system — the multi-agent inference
+
+```bash
+cd system
+cp .env.example .env   # set your LLM endpoint + key
+pip install -e ".[dev]"
+docker compose up -d   # GraphRAG
+python -m src.main
+```
+
 To rebuild the database from the workbooks at any time:
 
 ```bash
 cd server && npm run seed -- --reset
 ```
 
+A single-origin production image (frontend served by the backend) is provided via the
+root `Dockerfile` and `render.yaml`.
+
 ---
 
-## How it's wired
-
-```
- data/*.xlsx ──seed──▶ SQLite (server/data/workbench.db)
-                          │
-        Express REST API (server, :4000)
-                          │  /api/*  (Vite proxy)
-                React SPA (frontend, :5173)
-```
-
-- **Frontend → API:** `frontend/src/lib/api.ts` (fetch) + `lib/queries.ts`
-  (react-query). Mutations invalidate `dashboard`/`customer` queries so the UI
-  refetches automatically.
-- **API → DB:** `server/src/index.ts` (routes), `server/src/repo.ts` (drift +
-  apply/drop logic), `server/src/schema.ts` (DDL), `server/src/seed.ts` (xlsx →
-  rows).
-
-### API endpoints (the UML use cases)
+## The use cases (UML)
 
 | Use case | Endpoint |
 |---|---|
@@ -79,40 +114,41 @@ cd server && npm run seed -- --reset
 | Add client data (comment) | `POST /api/customers/:id/comments` |
 | Apply suggestion (records a transaction, swaps the holding) | `POST /api/suggestions/:id/apply` |
 | Drop suggestion | `POST /api/suggestions/:id/drop` |
+| Run advisory pipeline for a client | `POST /api/system/trigger` |
+| Submit WM decision (HITL) | `POST /api/system/hitl` |
 
 Per the brief, **news is shown on the WM dashboard, not inside the client view**
 (even though the UML lists "get TLDR news" under "get client").
 
 ---
 
-## App map (where to find things)
+## App map
 
-- **Dashboard** (`/`) — clients overview, action queue (pending suggestions),
-  market signals (TLDR news). `frontend/src/pages/DashboardPage.tsx`
+- **Dashboard** (`/`) — clients overview, action queue (pending suggestions), market
+  signals (TLDR news). `frontend/src/pages/DashboardPage.tsx`
 - **Clients** (`/clients`) — the book. `ClientsPage.tsx`
-- **Client detail** (`/clients/:id`) — tabs: Holdings (donut + table),
-  Suggestions (apply/drop), History, Relationship · DNA (CRM log + add data).
-  `ClientDetailPage.tsx`
+- **Client detail** (`/clients/:id`) — tabs: Holdings (donut + table), Suggestions
+  (apply/drop), History, Relationship · DNA (CRM log + add data). `ClientDetailPage.tsx`
 - **Action queue** (`/alerts`) — cross-book pending suggestions.
+
+The advisory graph (`system/`) drives eight agents end-to-end:
+`get_client_dna → get_cio_plan → get_current_plan → fetch_news → check_actions →
+create_plan → explain_plan → evaluate_plan`, with the WM in the loop between explain and
+evaluate.
+
+---
 
 ## Design
 
-Palette follows the SIX reference UI: light neutral canvas, white cards, **SIX
-red** as the accent (active nav, primary actions, alerts), green for positive
-figures. Tokens live in `frontend/src/index.css` (`:root` / `.dark`). Type:
-Bricolage Grotesque (display) · Inter (body) · IBM Plex Mono (tabular figures).
+Palette follows the SIX reference UI: light neutral canvas, white cards, **SIX red** as
+the accent (active nav, primary actions, alerts), green for positive figures. Tokens live
+in `frontend/src/index.css`. Type: Bricolage Grotesque (display) · Inter (body) ·
+IBM Plex Mono (tabular figures). Brand assets live in `frontend/public/brand/`.
 
-## Continuing the work
+<div align="center">
 
-- The data layer is decoupled: to point the frontend at a different backend,
-  keep the response shapes in `frontend/src/lib/api-types.ts`.
-- The 4 personas (Räber, Schneider, Huber, Ammann) and their trigger scenarios
-  are seeded in `server/src/seed.ts` — extend there.
-- Tech-stack/setup notes (incl. the self-contained Node install used on the
-  build machine) are in each app's own `README.md`.
+<img src="frontend/public/brand/polaris-mark.png" alt="Polaris mark" width="120" />
 
-## Status / TODO
+**Polaris** — the WM's true north.
 
-- [ ] Replace seeded news/suggestions with the live multi-agent inference.
-- [ ] Tailored advisory message generation (Message agent) — not yet built.
-- [ ] SIX MCP / Event Registry live data wiring.
+</div>
