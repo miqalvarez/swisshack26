@@ -35,7 +35,7 @@ or rejects them from the dashboard — every decision flowing back to evaluate p
 ```
         data/*.xlsx ──seed──▶  SQLite (server/data/workbench.db)
                                      │
-   ┌───────────────────────┐        │  REST  /api/*
+   ┌────────────────────────┐        │  REST  /api/*
    │  system/ (LangGraph)   │◀──────▶│
    │  multi-agent inference │   Express API (server, :4000)
    │  • client DNA          │        │
@@ -43,7 +43,7 @@ or rejects them from the dashboard — every decision flowing back to evaluate p
    │  • news (GraphRAG)     │        ▼
    │  • create / explain    │   React SPA (frontend, :5173)
    │  • evaluate plan       │        │
-   └───────────────────────┘        ▼
+   └────────────────────────┘        ▼
                                  Wealth Manager
                               (applies / rejects)
 ```
